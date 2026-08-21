@@ -1,69 +1,51 @@
-export interface GeminiConfig {
-  apiKey?: string;
-  model?: string;
+export interface BackendHealth {
+  server: boolean;
+  geminiConfigured: boolean;
+  model: string;
 }
 
 export class GeminiClient {
-  private apiKey: string;
-  private model: string;
+  private isBackendConfigured: boolean = false;
 
-  constructor(config?: GeminiConfig) {
-    this.apiKey =
-      config?.apiKey ||
-      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
-      '';
-    this.model = config?.model || 'gemini-2.5-flash';
+  constructor() {
+    this.checkHealth();
+  }
+
+  public async checkHealth(): Promise<BackendHealth> {
+    try {
+      const response = await fetch('/api/health');
+      if (response.ok) {
+        const data = await response.json();
+        this.isBackendConfigured = Boolean(data.geminiConfigured);
+        return data;
+      }
+    } catch {
+      // Backend not running or offline
+    }
+    this.isBackendConfigured = false;
+    return { server: false, geminiConfigured: false, model: 'demo-fallback' };
   }
 
   public hasKey(): boolean {
-    return Boolean(this.apiKey && this.apiKey.trim().length > 0);
+    return this.isBackendConfigured;
   }
 
-  public setApiKey(key: string) {
-    this.apiKey = key;
-  }
-
-  public async generateJSON<T>(systemInstruction: string, userPrompt: string): Promise<T | null> {
-    if (!this.hasKey()) {
-      return null;
-    }
-
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-
-    const payload = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-      },
-    };
-
+  public async callBackend<T>(action: string, payload: any): Promise<T | null> {
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/civic-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ action, payload }),
       });
 
-      if (!response.ok) {
-        console.warn('Gemini API request failed:', response.statusText);
-        return null;
+      if (!response.ok) return null;
+      const res = await response.json();
+      if (res.success && res.data) {
+        return res.data as T;
       }
-
-      const data = await response.json();
-      const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!textResponse) return null;
-
-      // Clean JSON string if wrapped in markdown codeblock
-      const cleanJson = textResponse.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-      return JSON.parse(cleanJson) as T;
+      return null;
     } catch (err) {
-      console.warn('Error calling Gemini API:', err);
+      console.warn(`Error calling backend action ${action}:`, err);
       return null;
     }
   }
