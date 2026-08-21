@@ -193,15 +193,92 @@ export const DOMAIN_VOCABULARIES: DomainVocabulary[] = [
     domain: 'welfare_entitlement',
     name: 'Welfare & Entitlements',
     nouns: [
-      'ration', 'pension', 'subsidy', 'scheme', 'bpl card', 'scholarship', 'welfare', 'benefit'
+      'ration', 'pension', 'subsidy', 'scheme', 'bpl card', 'scholarship', 'welfare', 'benefit', 'dbt', 'epfo', 'aadhaar link'
     ],
-    verbs: ['apply', 'receive', 'deny', 'stop', 'disburse'],
+    verbs: ['apply', 'receive', 'deny', 'stop', 'disburse', 'suspend', 'block'],
     phrases: [
       'pension stopped', 'ration shop denial', 'scholarship not disbursed',
-      'welfare scheme benefit denied', 'bpl card application rejected'
+      'welfare scheme benefit denied', 'bpl card application rejected', 'discontinued pension',
+      'stopped three months ago'
     ],
     negativeWords: ['seller', 'product', 'landlord', 'rent', 'doctor'],
-    examplePhrases: []
+    examplePhrases: [
+      "My father's pension stopped three months ago unexpectedly."
+    ]
+  },
+  {
+    domain: 'police_legal_grievance',
+    name: 'Police & Criminal Justice Grievances',
+    nouns: [
+      'police', 'station', 'cop', 'constable', 'fir', 'complaint', 'officer', 'sho', 'inspector',
+      'sp', 'commissioner', 'harassment', 'extortion', 'theft', 'assault', 'bribe', 'investigation'
+    ],
+    verbs: ['refuse', 'register', 'investigate', 'harass', 'demand', 'extort', 'threaten', 'arrest', 'detain'],
+    phrases: [
+      'police refusing fir', 'refused to register fir', 'police station refused complaint',
+      'sho refused to take complaint', 'police harassment', 'no action taken by police',
+      'police demanded bribe to register fir', 'refusing to lodge fir'
+    ],
+    negativeWords: ['landlord', 'tenant', 'product', 'seller', 'pothole', 'hospital'],
+    examplePhrases: [
+      'The local police station is refusing to register an FIR for my stolen vehicle.',
+      'Police refused to take my complaint.'
+    ]
+  },
+  {
+    domain: 'power_electricity_utility',
+    name: 'Electricity & Power Utility Grievances',
+    nouns: [
+      'electricity', 'power', 'current', 'meter', 'eb bill', 'discom', 'transformer',
+      'voltage', 'outage', 'blackout', 'tariff', 'reading', 'wire', 'grid', 'substation'
+    ],
+    verbs: ['cut', 'disconnect', 'overcharge', 'fluctuate', 'surge', 'burn', 'replace'],
+    phrases: [
+      'excessive electricity bill', 'faulty electricity meter', 'unscheduled power outage',
+      'power cut for hours', 'inflated power bill', 'electricity disconnected without notice',
+      'meter fast reading', 'discom overcharged'
+    ],
+    negativeWords: ['doctor', 'hospital', 'tenant', 'salary', 'marksheet'],
+    examplePhrases: [
+      'The electricity board sent an exorbitant bill of Rs 50,000 for a locked house.',
+      'Frequent power cuts in our area without any maintenance schedule.'
+    ]
+  },
+  {
+    domain: 'environment_civic_hazard',
+    name: 'Environmental & Pollution Hazards',
+    nouns: [
+      'pollution', 'noise', 'smoke', 'fumes', 'garbage dumping', 'waste', 'industrial',
+      'factory', 'effluent', 'toxic', 'air quality', 'loudspeaker', 'tree', 'greenery'
+    ],
+    verbs: ['pollute', 'dump', 'burn', 'release', 'cut', 'disturb', 'contaminate'],
+    phrases: [
+      'illegal garbage burning', 'noise pollution from commercial unit', 'factory releasing toxic effluents',
+      'open dumping of hazardous waste', 'illegal tree felling in colony', 'industrial smoke causing breathing problem'
+    ],
+    negativeWords: ['seller', 'product', 'invoice', 'salary', 'exam'],
+    examplePhrases: [
+      'A commercial workshop is running high-decibel machinery all night causing severe noise pollution.',
+      'Illegal garbage burning near our residential apartments.'
+    ]
+  },
+  {
+    domain: 'cyber_digital_fraud',
+    name: 'Cyber Crime & Online Financial Fraud',
+    nouns: [
+      'cyber', 'fraud', 'scam', 'phishing', 'hacked', 'otp', 'upi', 'impersonation',
+      'online fraud', 'apk', 'fake app', 'telegram scam', 'identity theft', 'extortion', 'blackmail'
+    ],
+    verbs: ['scam', 'cheat', 'hack', 'steal', 'drain', 'threaten', 'defraud'],
+    phrases: [
+      'lost money in online scam', 'unauthorized upi transaction', 'fake investment app fraud',
+      'blackmailed online with morph photos', 'otp scam drained bank balance', 'cyber financial fraud'
+    ],
+    negativeWords: ['pothole', 'street light', 'water pipeline', 'landlord'],
+    examplePhrases: [
+      'I was scammed of Rs 25,000 through a fraudulent UPI payment link on an online marketplace.',
+      'My phone was hacked and money was transferred via unauthorized banking transactions.'
+    ]
   }
 ];
 

@@ -334,6 +334,24 @@ export const NewCase: React.FC = () => {
 
               {understanding && (
                 <>
+                  {/* AI Domain Classification Badge */}
+                  {understanding.domainName && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        AI Classified Rights Domain
+                      </span>
+                      <div className="inline-flex items-center gap-2 w-full bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl text-xs font-bold text-indigo-900">
+                        <span>⚖️</span>
+                        <span>{understanding.domainName}</span>
+                        {understanding.domainConfidence && (
+                          <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-800">
+                            {Math.round(understanding.domainConfidence * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* AI Generated Case Description Label */}
                   {understanding.aiCaseDescription && (
                     <div className="space-y-1">
@@ -346,6 +364,22 @@ export const NewCase: React.FC = () => {
                       <p className="text-[10px] text-slate-400 italic">
                         Descriptive label only — does not limit system logic.
                       </p>
+                    </div>
+                  )}
+
+                  {/* Applicable Statutory Framework */}
+                  {understanding.applicableLaws && understanding.applicableLaws.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Applicable Legal Framework
+                      </span>
+                      <div className="space-y-1">
+                        {understanding.applicableLaws.map((law, idx) => (
+                          <div key={idx} className="bg-slate-50 text-[11px] font-semibold text-slate-700 p-1.5 rounded border border-slate-200">
+                            📜 {law}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 

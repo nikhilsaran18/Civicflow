@@ -42,11 +42,16 @@ export function classifyDomain(text: string): DomainClassificationResult {
     education: { score: 0, nouns: [], verbs: [], phrases: [] },
     banking_financial: { score: 0, nouns: [], verbs: [], phrases: [] },
     welfare_entitlement: { score: 0, nouns: [], verbs: [], phrases: [] },
+    police_legal_grievance: { score: 0, nouns: [], verbs: [], phrases: [] },
+    power_electricity_utility: { score: 0, nouns: [], verbs: [], phrases: [] },
+    environment_civic_hazard: { score: 0, nouns: [], verbs: [], phrases: [] },
+    cyber_digital_fraud: { score: 0, nouns: [], verbs: [], phrases: [] },
     other_civic_legal: { score: 0, nouns: [], verbs: [], phrases: [] },
   };
 
   DOMAIN_VOCABULARIES.forEach(vocab => {
     const d = vocab.domain;
+    if (!domainScores[d]) return;
 
     // 1. Noun / Entity Matching (Strongest weight: 3.5)
     vocab.nouns.forEach(noun => {
@@ -90,19 +95,37 @@ export function classifyDomain(text: string): DomainClassificationResult {
   });
 
   // CRITICAL NEGATIVE SIGNAL OVERRIDES:
-  // If Healthcare entities exist (doctor, hospital, patient, clinic, treatment, medicine),
-  // drastically penalize Consumer classification so generic verbs like "refuses" or "refund" don't hijack it!
+  // If Healthcare entities exist, penalize Consumer
   const healthcareEntitiesExist = ['doctor', 'physician', 'hospital', 'clinic', 'patient', 'treatment', 'medicine'].some(e => cleanText.includes(e));
   if (healthcareEntitiesExist) {
     domainScores['consumer'].score = Math.max(0, domainScores['consumer'].score - 10.0);
     domainScores['healthcare_patient'].score += 5.0;
   }
 
-  // If Housing entities exist (landlord, rent, tenant, deposit, vacate), penalize Consumer
-  const tenantEntitiesExist = ['landlord', 'tenant', 'rent', 'lease', 'apartment', 'flat'].some(e => cleanText.includes(e));
-  if (tenantEntitiesExist) {
+  // If Housing entities exist, penalize Consumer
+  const tenantEntitiesExist = ['landlord', 'tenant', 'rent', 'lease', 'apartment', 'flat', 'deposit'].some(e => cleanText.includes(e));
+  if (tenantEntitiesExist && !cleanText.includes('phone') && !cleanText.includes('laptop')) {
     domainScores['consumer'].score = Math.max(0, domainScores['consumer'].score - 8.0);
     domainScores['housing_tenant'].score += 5.0;
+  }
+
+  // If Police / FIR entities exist, boost police
+  const policeEntitiesExist = ['police', 'fir', 'sho', 'sp office', 'police station'].some(e => cleanText.includes(e));
+  if (policeEntitiesExist) {
+    domainScores['police_legal_grievance'].score += 6.0;
+    domainScores['consumer'].score = Math.max(0, domainScores['consumer'].score - 6.0);
+  }
+
+  // If Electricity / Power entities exist, boost electricity
+  const electricityEntitiesExist = ['electricity', 'power cut', 'eb bill', 'meter reading', 'discom', 'transformer'].some(e => cleanText.includes(e));
+  if (electricityEntitiesExist) {
+    domainScores['power_electricity_utility'].score += 6.0;
+  }
+
+  // If Cyber / Online fraud entities exist, boost cyber
+  const cyberEntitiesExist = ['cyber', 'phishing', 'scam', 'otp fraud', 'hacked', 'online fraud'].some(e => cleanText.includes(e));
+  if (cyberEntitiesExist) {
+    domainScores['cyber_digital_fraud'].score += 6.0;
   }
 
   // Sort scores

@@ -81,7 +81,13 @@ export const CaseDetail: React.FC = () => {
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {civicCase.understanding?.domainName && (
+              <span className="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold px-3 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1">
+                <span>⚖️</span>
+                <span>{civicCase.understanding.domainName}</span>
+              </span>
+            )}
             <span className="bg-indigo-500/20 text-indigo-300 text-xs font-extrabold px-3 py-1 rounded-full border border-indigo-400/30">
               📌 {civicCase.aiCaseDescription || 'Civic Case Analysis'}
             </span>

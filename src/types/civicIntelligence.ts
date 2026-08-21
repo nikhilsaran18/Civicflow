@@ -28,6 +28,25 @@ export interface FactItem {
   value: string;
 }
 
+export type RightsDomain =
+  | 'healthcare_patient'
+  | 'consumer'
+  | 'housing_tenant'
+  | 'workplace_labour'
+  | 'education'
+  | 'municipal_utility'
+  | 'rti_information'
+  | 'banking_financial'
+  | 'welfare_entitlement'
+  | 'public_government_service'
+  | 'police_legal_grievance'
+  | 'power_electricity_utility'
+  | 'environment_civic_hazard'
+  | 'cyber_digital_fraud'
+  | 'other_civic_legal';
+
+export type CivicCategory = RightsDomain;
+
 export interface CaseUnderstanding {
   situationSummary: string;
   summary?: string; // alias for backwards compatibility
@@ -40,6 +59,11 @@ export interface CaseUnderstanding {
   inferredGoal?: string;
   goalNeedsClarification?: boolean;
   aiCaseDescription: string;
+  domain?: RightsDomain;
+  domainName?: string;
+  domainConfidence?: number;
+  applicableLaws?: string[];
+  matchedSignals?: string[];
   jurisdictionNeeded?: boolean;
   urgency?: 'low' | 'medium' | 'high' | 'critical';
   confidence: 'low' | 'medium' | 'high';
