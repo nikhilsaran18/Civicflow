@@ -1,60 +1,77 @@
 import { GoogleGenAI } from '@google/genai';
-import { CIVIC_SYSTEM_PROMPT } from './prompts/civicSystemPrompt.mjs';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Ensure .env is loaded inside module execution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 export class GeminiService {
-  constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || '';
-    this.model = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
-    this.ai = this.apiKey ? new GoogleGenAI({ apiKey: this.apiKey }) : null;
+  getApiKey() {
+    return (process.env.GEMINI_API_KEY || '').trim();
+  }
+
+  getModel() {
+    return (process.env.GEMINI_MODEL || 'gemini-3.7-flash').trim();
   }
 
   isConfigured() {
-    return Boolean(this.apiKey && this.apiKey.trim().length > 0);
+    const apiKey = this.getApiKey();
+    const model = this.getModel();
+    return Boolean(
+      apiKey &&
+      apiKey.length > 0 &&
+      model &&
+      model.length > 0
+    );
+  }
+
+  getAIClient() {
+    if (!this.isConfigured()) return null;
+    return new GoogleGenAI({ apiKey: this.getApiKey() });
   }
 
   async generateJSON(systemInstruction, userPrompt) {
     if (!this.isConfigured()) {
-      return null;
+      return { success: false, errorCode: 'GEMINI_NOT_CONFIGURED', error: 'Gemini API key is not configured in .env' };
     }
 
+    const ai = this.getAIClient();
+    const modelName = this.getModel();
+
     try {
-      // Use standard REST API or SDK generateContent
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-      const payload = {
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
+      const fullPrompt = `${systemInstruction}\n\n${userPrompt}`;
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: fullPrompt,
+        config: {
           responseMimeType: 'application/json',
         },
-      };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        console.warn(`Gemini API call returned status ${response.status}: ${response.statusText}`);
-        return null;
+      const rawText = response?.text || response?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) {
+        console.warn('Gemini returned empty response text.');
+        return { success: false, errorCode: 'GEMINI_EMPTY_RESPONSE', error: 'Empty response received from Gemini model' };
       }
 
-      const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) return null;
-
       const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-      return JSON.parse(cleanJson);
+      const parsed = JSON.parse(cleanJson);
+      return { success: true, data: parsed };
     } catch (err) {
-      console.error('Error in GeminiService.generateJSON:', err);
-      return null;
+      console.error(`Gemini API Error (model: ${modelName}):`, err?.message || err);
+      const errMsg = err?.message || String(err);
+      const isModelNotFound = errMsg.toLowerCase().includes('not found') || errMsg.toLowerCase().includes('model');
+      return {
+        success: false,
+        errorCode: isModelNotFound ? 'GEMINI_MODEL_NOT_FOUND' : 'GEMINI_API_ERROR',
+        error: errMsg,
+      };
     }
   }
 }
 
 export const geminiService = new GeminiService();
+

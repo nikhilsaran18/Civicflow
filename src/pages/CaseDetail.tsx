@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, CheckCircle2, AlertCircle, ArrowRight, ExternalLink, FileText, Clock, ShieldCheck, Download, Edit3, Bookmark } from 'lucide-react';
+import { Sparkles, FileText, Clock, ShieldCheck, ExternalLink, Edit3, Bookmark, Download, CheckCircle, HelpCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { CivicCase, ActionPlanStep } from '../types/civicIntelligence';
 import { CaseStorageService } from '../services/caseStorageService';
+import { CaseFileModal } from '../components/case/CaseFileModal';
 
 export const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ export const CaseDetail: React.FC = () => {
   const { t } = useLanguage();
 
   const [civicCase, setCivicCase] = useState<CivicCase | null>(null);
+  const [showCaseFileModal, setShowCaseFileModal] = useState(false);
 
   useEffect(() => {
     // Check if passed via state
@@ -44,7 +46,7 @@ export const CaseDetail: React.FC = () => {
     );
   }
 
-  const { solution, understanding } = civicCase;
+  const { solution, understanding, qAndA } = civicCase;
 
   const handleStepStatusToggle = (stepOrder: number) => {
     if (!civicCase || !civicCase.solution) return;
@@ -71,33 +73,44 @@ export const CaseDetail: React.FC = () => {
   };
 
   const handleOpenActionStudio = (docType: string) => {
-    navigate(`/case/${civicCase.id}/document/${docType}`, {
-      state: { caseData: civicCase, docType },
-    });
+    if (docType === 'rti') {
+      navigate('/rti', { state: { caseData: civicCase } });
+    } else {
+      navigate(`/case/${civicCase.id}/document/${docType}`, {
+        state: { caseData: civicCase, docType },
+      });
+    }
   };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      {/* Case File Modal */}
+      {showCaseFileModal && (
+        <CaseFileModal civicCase={civicCase} onClose={() => setShowCaseFileModal(false)} />
+      )}
+
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div className="flex flex-wrap items-center gap-2">
-            {civicCase.understanding?.domainName && (
-              <span className="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold px-3 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1">
-                <span>⚖️</span>
-                <span>{civicCase.understanding.domainName}</span>
-              </span>
-            )}
             <span className="bg-indigo-500/20 text-indigo-300 text-xs font-extrabold px-3 py-1 rounded-full border border-indigo-400/30">
-              📌 {civicCase.aiCaseDescription || 'Civic Case Analysis'}
+              📌 {civicCase.title || understanding.caseTitle}
             </span>
             <span className="text-xs text-slate-400">
               ID: {civicCase.id}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCaseFileModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-xs rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-1.5"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Generate Case File</span>
+            </button>
+
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               ● Analysis Complete
             </span>
           </div>
@@ -108,7 +121,7 @@ export const CaseDetail: React.FC = () => {
             {civicCase.title}
           </h1>
           <p className="text-sm text-slate-300">
-            Original Issue: "{civicCase.originalProblem}"
+            Original Statement: "{civicCase.originalProblem}"
           </p>
         </div>
       </div>
@@ -119,23 +132,86 @@ export const CaseDetail: React.FC = () => {
           <FileText className="w-5 h-5" />
           <h2>{t('situationTitle')}</h2>
         </div>
-        <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">
-          {solution.situationSummary}
+        <p className="text-slate-800 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">
+          {solution.situationSummary || understanding.situationSummary}
         </p>
       </section>
 
-      {/* SECTION 2 — WHAT CIVICFLOW FOUND */}
+      {/* SECTION 2 — CONFIRMED FACTS & CLARIFICATION Q&A */}
+      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
+          <CheckCircle className="w-5 h-5 text-emerald-600" />
+          <h2>2. Confirmed Facts & Clarification Answers</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Confirmed Facts List */}
+          <div className="space-y-3">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Confirmed Case Facts ({understanding.confirmedFacts?.length || 0})
+            </span>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {understanding.confirmedFacts.map((fact, idx) => (
+                <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-800">
+                  <span className="font-bold text-emerald-700">✓ Fact:</span> {fact.fact}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sequential 3 Clarification Questions & Answers */}
+          <div className="space-y-3">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              AI Clarification Record ({qAndA ? qAndA.length : 0} Questions)
+            </span>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {qAndA && qAndA.length > 0 ? (
+                qAndA.map((item, idx) => (
+                  <div key={idx} className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-xs space-y-1">
+                    <div className="font-bold text-indigo-900">
+                      Q{item.questionNumber}: {item.question.question}
+                    </div>
+                    <div className="text-slate-700">
+                      Answer: <span className="font-bold text-slate-900">{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  No clarification questions required for this initial statement.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3 — WHAT CIVICFLOW FOUND */}
       <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
           <Sparkles className="w-5 h-5" />
           <h2>{t('whatCivicFlowFoundTitle')}</h2>
         </div>
-        <p className="text-slate-700 text-sm leading-relaxed">
-          {solution.explanation}
+        <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">
+          {solution.whatCivicFlowFound || solution.explanation}
         </p>
+
+        {solution.rightsAndConsiderations && solution.rightsAndConsiderations.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Key Rights & Considerations:</span>
+            <ul className="space-y-1.5">
+              {solution.rightsAndConsiderations.map((r, i) => (
+                <li key={i} className="text-xs text-indigo-900 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100 font-semibold flex items-center gap-2">
+                  <span>⚖️</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
-      {/* SECTION 3 — YOUR OPTIONS */}
+      {/* SECTION 4 — YOUR OPTIONS */}
       <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
         <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
           <ShieldCheck className="w-5 h-5" />
@@ -162,7 +238,7 @@ export const CaseDetail: React.FC = () => {
         </div>
       </section>
 
-      {/* SECTION 4 — RECOMMENDED NEXT STEP */}
+      {/* SECTION 5 — RECOMMENDED NEXT STEP */}
       <section className="bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 p-6 sm:p-8 rounded-3xl shadow-lg space-y-3">
         <div className="flex items-center gap-2 font-black uppercase tracking-wider text-xs bg-slate-950/20 text-slate-950 px-3 py-1 rounded-full w-fit">
           ⭐ {t('recommendedNextStepTitle')}
@@ -173,7 +249,7 @@ export const CaseDetail: React.FC = () => {
         </p>
       </section>
 
-      {/* SECTION 5 — YOUR ACTION PLAN (VERTICAL INTERACTIVE TIMELINE) */}
+      {/* SECTION 6 — YOUR DYNAMIC ACTION PLAN (INTERACTIVE STATUS TIMELINE) */}
       <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg">
@@ -186,7 +262,7 @@ export const CaseDetail: React.FC = () => {
         <div className="space-y-6 relative pl-6 border-l-2 border-indigo-100 ml-4">
           {solution.actionPlan.map((step) => (
             <div key={step.order} className="relative space-y-3 group">
-              {/* Timeline marker node */}
+              {/* Interactive Timeline marker node */}
               <button
                 onClick={() => handleStepStatusToggle(step.order)}
                 className={`absolute -left-[35px] top-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
@@ -208,7 +284,7 @@ export const CaseDetail: React.FC = () => {
                   </h3>
                   <button
                     onClick={() => handleStepStatusToggle(step.order)}
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${
+                    className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
                       step.status === 'completed'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : step.status === 'in_progress'
@@ -227,8 +303,8 @@ export const CaseDetail: React.FC = () => {
                 <p className="text-xs text-slate-700 leading-relaxed">{step.description}</p>
 
                 {step.whyItMatters && (
-                  <p className="text-xs text-indigo-900 bg-indigo-50/60 p-2.5 rounded-lg border border-indigo-100/80">
-                    💡 <span className="font-semibold">Why this step matters:</span> {step.whyItMatters}
+                  <p className="text-xs text-indigo-900 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100/80 font-medium">
+                    💡 <span className="font-bold">Why this step matters:</span> {step.whyItMatters}
                   </p>
                 )}
 
@@ -237,7 +313,7 @@ export const CaseDetail: React.FC = () => {
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Required Evidence / Items:</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {step.evidenceNeeded.map((ev, i) => (
-                        <span key={i} className="text-xs bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                        <span key={i} className="text-xs bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 font-medium">
                           📄 {ev}
                         </span>
                       ))}
@@ -251,30 +327,36 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 7 — RESPONSIBLE AUTHORITY */}
-      {solution.responsibleAuthority && (
-        <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-            <Bookmark className="w-5 h-5" />
-            <h2>{t('responsibleAuthorityTitle')}</h2>
-          </div>
+      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
+          <Bookmark className="w-5 h-5" />
+          <h2>{t('responsibleAuthorityTitle')}</h2>
+        </div>
 
+        {solution.responsibleAuthority && solution.responsibleAuthority.name ? (
           <div className="bg-indigo-50/60 border border-indigo-200/80 p-6 rounded-2xl space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-extrabold text-slate-900 text-lg">
                 {solution.responsibleAuthority.name}
               </h3>
-              <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
-                {solution.responsibleAuthority.type}
-              </span>
+              {solution.responsibleAuthority.type && (
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
+                  {solution.responsibleAuthority.type}
+                </span>
+              )}
             </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <span className="font-semibold">Relevance:</span> {solution.responsibleAuthority.relevance}
-            </p>
+            {solution.responsibleAuthority.relevance && (
+              <p className="text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold">Relevance:</span> {solution.responsibleAuthority.relevance}
+              </p>
+            )}
 
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <span className="font-semibold">How to Submit / Contact:</span> {solution.responsibleAuthority.actionableInfo}
-            </p>
+            {solution.responsibleAuthority.actionableInfo && (
+              <p className="text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold">How to Contact / Submit:</span> {solution.responsibleAuthority.actionableInfo}
+              </p>
+            )}
 
             {solution.responsibleAuthority.officialLink && (
               <div className="pt-2">
@@ -290,11 +372,16 @@ export const CaseDetail: React.FC = () => {
               </div>
             )}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="bg-amber-50/80 border border-amber-200 p-5 rounded-2xl text-xs text-amber-900 space-y-1">
+            <span className="font-bold block">Verification Needed</span>
+            <p>The appropriate authority requires verification based on location and case details. CivicFlow will not invent an authority name without sufficient verification.</p>
+          </div>
+        )}
+      </section>
 
       {/* SECTION 8 — AUTHORITATIVE SOURCES */}
-      {solution.sources.length > 0 && (
+      {solution.sources && solution.sources.length > 0 && (
         <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
           <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
             <ExternalLink className="w-5 h-5" />
@@ -305,7 +392,7 @@ export const CaseDetail: React.FC = () => {
             {solution.sources.map((src, idx) => (
               <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
                 <h4 className="font-bold text-slate-900 text-sm">{src.title}</h4>
-                <p className="text-xs text-slate-500">{src.authority}</p>
+                {src.authority && <p className="text-xs text-slate-500">{src.authority}</p>}
                 <p className="text-xs text-slate-700">{src.relevance}</p>
                 {src.url && (
                   <a
@@ -337,17 +424,27 @@ export const CaseDetail: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-4">
-          {solution.suggestedDocuments.map((doc, idx) => (
+          {solution.suggestedDocuments && solution.suggestedDocuments.length > 0 ? (
+            solution.suggestedDocuments.map((doc, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleOpenActionStudio(doc.documentType || doc.type || 'complaint')}
+                className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-sm rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>{doc.title}</span>
+                <Sparkles className="w-4 h-4" />
+              </button>
+            ))
+          ) : (
             <button
-              key={idx}
-              onClick={() => handleOpenActionStudio(doc.type)}
+              onClick={() => handleOpenActionStudio('complaint')}
               className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-sm rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-2"
             >
               <FileText className="w-4 h-4" />
-              <span>{doc.title}</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Generate Formal Complaint Draft</span>
             </button>
-          ))}
+          )}
         </div>
       </section>
     </div>

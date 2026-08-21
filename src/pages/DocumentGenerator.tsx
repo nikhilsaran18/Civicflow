@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Copy, Printer, Download, Save, RefreshCw, ArrowLeft, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { CivicCase, GeneratedDocument } from '../types/civicIntelligence';
+import { CivicCase, GeneratedDocument, DynamicField } from '../types/civicIntelligence';
 import { defaultCivicIntelligenceEngine } from '../services/ai/civicIntelligenceEngine';
 import { CaseStorageService } from '../services/caseStorageService';
 
@@ -14,10 +14,9 @@ export const DocumentGenerator: React.FC = () => {
 
   const [civicCase, setCivicCase] = useState<CivicCase | null>(null);
   const [doc, setDoc] = useState<GeneratedDocument | null>(null);
-
-  const [applicantName, setApplicantName] = useState('');
-  const [applicantAddress, setApplicantAddress] = useState('');
-  const [applicantPhone, setApplicantPhone] = useState('');
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [dynamicFields, setDynamicFields] = useState<DynamicField[]>([]);
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -40,31 +39,53 @@ export const DocumentGenerator: React.FC = () => {
         )
         .then(generated => {
           setDoc(generated);
-          setApplicantName(generated.fields.applicantName || '');
-          setApplicantAddress(generated.fields.applicantAddress || '');
-          setApplicantPhone(generated.fields.applicantPhone || '');
+          setFieldValues(generated.fields || {});
+
+          if (generated.dynamicFields && generated.dynamicFields.length > 0) {
+            setDynamicFields(generated.dynamicFields);
+          } else {
+            // Default dynamic fields metadata if none provided
+            const initialDynamic: DynamicField[] = Object.entries(generated.fields || {}).map(([key, val]) => ({
+              id: key,
+              label: key.replace(/_/g, ' ').toUpperCase(),
+              value: val,
+              placeholder: `Enter ${key.replace(/_/g, ' ')}`,
+              required: false,
+              type: 'text',
+            }));
+            setDynamicFields(initialDynamic);
+          }
         });
     }
   }, [id, documentId, location.state]);
 
+  const handleFieldChange = (fieldId: string, value: string) => {
+    setFieldValues(prev => ({ ...prev, [fieldId]: value }));
+  };
+
   const handleUpdateFields = async () => {
     if (!civicCase || !doc) return;
-    const updatedAnswers = {
-      ...civicCase.answers,
-      applicant_name: applicantName,
-      applicant_address: applicantAddress,
-      applicant_phone: applicantPhone,
-    };
+    setLoadingUpdate(true);
+    try {
+      const updatedAnswers = {
+        ...civicCase.answers,
+        ...fieldValues,
+      };
 
-    const newDoc = await defaultCivicIntelligenceEngine.generateDocumentDraft(
-      doc.documentType,
-      civicCase.title,
-      civicCase.originalProblem,
-      updatedAnswers,
-      civicCase.solution
-    );
+      const newDoc = await defaultCivicIntelligenceEngine.generateDocumentDraft(
+        doc.documentType,
+        civicCase.title,
+        civicCase.originalProblem,
+        updatedAnswers,
+        civicCase.solution
+      );
 
-    setDoc(newDoc);
+      setDoc(newDoc);
+    } catch (err) {
+      console.error('Error updating document preview:', err);
+    } finally {
+      setLoadingUpdate(false);
+    }
   };
 
   const handleCopyText = () => {
@@ -74,7 +95,7 @@ export const DocumentGenerator: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrint = () => {
+  const handlePrintOrPdf = () => {
     window.print();
   };
 
@@ -100,7 +121,7 @@ export const DocumentGenerator: React.FC = () => {
   if (!doc) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
-        <h2 className="text-xl font-bold">Generating document preview...</h2>
+        <h2 className="text-xl font-bold">Drafting case-specific document...</h2>
         <button onClick={() => navigate('/cases')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">
           Return to Cases
         </button>
@@ -111,7 +132,7 @@ export const DocumentGenerator: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4 print:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -120,7 +141,7 @@ export const DocumentGenerator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Action Studio Document Generator</span>
+            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Action Studio Document Studio</span>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{doc.title}</h1>
           </div>
         </div>
@@ -135,11 +156,11 @@ export const DocumentGenerator: React.FC = () => {
           </button>
 
           <button
-            onClick={handlePrint}
-            className="px-3.5 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5"
+            onClick={handlePrintOrPdf}
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>{t('print')}</span>
+            <span>Download PDF / Print</span>
           </button>
 
           <button
@@ -147,12 +168,12 @@ export const DocumentGenerator: React.FC = () => {
             className="px-3.5 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{t('downloadPDF')} / Text</span>
+            <span>Text (.txt)</span>
           </button>
 
           <button
             onClick={handleSaveToCase}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{t('saveToCase')}</span>
@@ -160,71 +181,62 @@ export const DocumentGenerator: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Studio Grid: LEFT Document Preview + RIGHT Editable Information Fields */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT 2 COLS: Live Formatted Document Preview */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-md space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* Main Studio Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:block">
+        {/* LEFT 2 COLS: Document Preview */}
+        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-md space-y-6 print:p-0 print:border-none print:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 print:hidden">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {t('docPreview')} (Markdown / Print Ready)
+              {t('docPreview')} (Print Ready)
             </span>
             <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full">
-              Case-Specific Data Auto-Mapped
+              Case Facts Auto-Mapped
             </span>
           </div>
 
-          <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-900 shadow-inner">
+          <div className="bg-slate-50/80 p-6 sm:p-8 rounded-2xl border border-slate-200 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-900 shadow-inner print:bg-white print:text-black print:text-sm print:p-0 print:border-none">
             {doc.previewMarkdown}
           </div>
         </div>
 
-        {/* RIGHT COL: Editable Information Fields */}
-        <div className="space-y-6">
+        {/* RIGHT COL: Dynamic Information Fields */}
+        <div className="space-y-6 print:hidden">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 sticky top-24">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-sm">{t('editFields')}</h3>
-              <p className="text-[11px] text-slate-500">Modify place, name, address, or details in real-time.</p>
+              <p className="text-[11px] text-slate-500">Modify dynamic case values in real-time.</p>
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Applicant Full Name</label>
-                <input
-                  type="text"
-                  value={applicantName}
-                  onChange={e => setApplicantName(e.target.value)}
-                  placeholder="e.g. Ramesh Kumar"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Communication Address</label>
-                <textarea
-                  value={applicantAddress}
-                  onChange={e => setApplicantAddress(e.target.value)}
-                  rows={3}
-                  placeholder="e.g. No 42, Main Street, Ward 12, Chennai"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Contact Number</label>
-                <input
-                  type="text"
-                  value={applicantPhone}
-                  onChange={e => setApplicantPhone(e.target.value)}
-                  placeholder="e.g. 9876543210"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+              {dynamicFields.map(field => (
+                <div key={field.id} className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700">{field.label}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea
+                      value={fieldValues[field.id] || ''}
+                      onChange={e => handleFieldChange(field.id, e.target.value)}
+                      placeholder={field.placeholder || `Enter ${field.label}`}
+                      rows={3}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={fieldValues[field.id] || ''}
+                      onChange={e => handleFieldChange(field.id, e.target.value)}
+                      placeholder={field.placeholder || `Enter ${field.label}`}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  )}
+                </div>
+              ))}
 
               <button
                 onClick={handleUpdateFields}
-                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                disabled={loadingUpdate}
+                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                {loadingUpdate ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 <span>Update Document Preview</span>
               </button>
             </div>

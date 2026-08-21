@@ -20,55 +20,44 @@ export interface ClarificationQuestion {
 export interface ConfirmedFact {
   id: string;
   fact: string;
-  source: 'initial_statement' | 'clarification_answer';
+  source: 'initial_statement' | 'clarification_answer' | 'evidence_file';
 }
 
-export interface FactItem {
-  label: string;
-  value: string;
+export interface EvidenceItem {
+  id: string;
+  title: string;
+  reason: string;
+  priority: 'recommended' | 'optional';
+  fileMetadata?: {
+    name: string;
+    size: number;
+    type: string;
+    uploadedAt: string;
+  };
 }
 
-export type RightsDomain =
-  | 'healthcare_patient'
-  | 'consumer'
-  | 'housing_tenant'
-  | 'workplace_labour'
-  | 'education'
-  | 'municipal_utility'
-  | 'rti_information'
-  | 'banking_financial'
-  | 'welfare_entitlement'
-  | 'public_government_service'
-  | 'police_legal_grievance'
-  | 'power_electricity_utility'
-  | 'environment_civic_hazard'
-  | 'cyber_digital_fraud'
-  | 'other_civic_legal';
-
-export type CivicCategory = RightsDomain;
+export interface PartyInfo {
+  name: string;
+  type: string;
+}
 
 export interface CaseUnderstanding {
+  caseTitle: string;
   situationSummary: string;
-  summary?: string; // alias for backwards compatibility
+  summary?: string; // fallback alias
   confirmedFacts: ConfirmedFact[];
-  knownFacts?: FactItem[];
-  missingCriticalInformation: string[];
-  missingInformation?: string[];
-  desiredOutcomeKnown?: boolean;
+  inferences?: string[];
+  unknowns?: string[];
+  parties?: PartyInfo[];
+  responsiblePartyType?: string;
+  likelyGoal?: string;
   desiredOutcome?: string;
-  inferredGoal?: string;
-  goalNeedsClarification?: boolean;
-  aiCaseDescription: string;
-  domain?: RightsDomain;
-  domainName?: string;
-  domainConfidence?: number;
-  applicableLaws?: string[];
-  matchedSignals?: string[];
-  jurisdictionNeeded?: boolean;
-  urgency?: 'low' | 'medium' | 'high' | 'critical';
+  aiCaseDescription?: string;
   confidence: 'low' | 'medium' | 'high';
-  readyForSolution: boolean;
-  readinessReason: string;
+  readyForSolution?: boolean;
+  readinessReason?: string;
+  domainName?: string; // internal compatibility
+  applicableLaws?: string[];
 }
 
 export interface OptionPath {
@@ -77,7 +66,6 @@ export interface OptionPath {
   description?: string;
   explanation?: string;
   considerations?: string[];
-  sourceIds?: string[];
 }
 
 export interface RecommendedStep {
@@ -93,7 +81,6 @@ export interface ActionPlanStep {
   evidenceNeeded?: string[];
   authority?: string;
   status: 'not_started' | 'in_progress' | 'completed';
-  deadline?: string;
 }
 
 export interface CivicSource {
@@ -102,17 +89,19 @@ export interface CivicSource {
   authority?: string;
   url: string;
   relevance: string;
-  lastChecked?: string;
 }
 
 export interface SuggestedDocument {
-  type: 'complaint' | 'rti' | 'request' | 'appeal' | 'representation' | 'email' | string;
+  id?: string;
+  documentType: string;
+  type?: string; // alias
   title: string;
   reason: string;
+  recommended?: boolean;
 }
 
 export interface ResponsibleAuthority {
-  name?: string;
+  name: string | null;
   type?: string;
   relevance?: string;
   reason?: string;
@@ -122,39 +111,29 @@ export interface ResponsibleAuthority {
 }
 
 export interface CivicSolution {
+  caseTitle: string;
   situationSummary: string;
   userGoal: string;
-  explanation?: string;
-  whatCivicFlowFound?: string;
+  whatCivicFlowFound: string;
+  explanation?: string; // fallback alias
+  rightsAndConsiderations: string[];
   options: OptionPath[];
-  possibleOptions?: OptionPath[];
   recommendedNextStep: RecommendedStep;
   actionPlan: ActionPlanStep[];
   sources: CivicSource[];
   suggestedDocuments: SuggestedDocument[];
-  responsibleAuthority?: ResponsibleAuthority;
-  likelyAuthority?: ResponsibleAuthority;
-  relevantEvidence?: string[];
-  confidence: 'low' | 'medium' | 'high';
+  responsibleAuthority?: ResponsibleAuthority | null;
   limitations: string[];
+  confidence: 'low' | 'medium' | 'high';
 }
 
-export interface SolutionValidation {
-  valid: boolean;
-  unsupportedClaims: string[];
-  irrelevantRecommendations: string[];
-  unsupportedAuthorities: string[];
-  unsupportedDocuments: string[];
-  shouldRegenerate: boolean;
-}
-
-export interface CaseMessage {
+export interface DynamicField {
   id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: string;
-  questions?: ClarificationQuestion[];
-  answers?: Record<string, string | string[]>;
+  label: string;
+  value: string;
+  placeholder?: string;
+  required?: boolean;
+  type?: string;
 }
 
 export interface GeneratedDocument {
@@ -163,9 +142,16 @@ export interface GeneratedDocument {
   documentType: string;
   title: string;
   fields: Record<string, string>;
+  dynamicFields?: DynamicField[];
   previewMarkdown: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface QuestionAnswerPair {
+  questionNumber: number;
+  question: ClarificationQuestion;
+  answer: string | string[];
 }
 
 export interface CivicCase {
@@ -174,15 +160,18 @@ export interface CivicCase {
   title: string;
   originalProblem: string;
   currentSummary: string;
-  desiredOutcome?: string;
-  aiCaseDescription?: string;
   confidence: 'low' | 'medium' | 'high';
   status: 'analysing' | 'action_required' | 'waiting' | 'resolved' | 'archived';
   createdAt: string;
   updatedAt: string;
-  messages: CaseMessage[];
   understanding: CaseUnderstanding;
+  qAndA: QuestionAnswerPair[];
+  recommendedEvidence?: EvidenceItem[];
+  uploadedEvidence?: EvidenceItem[];
+  evidenceSkipped?: boolean;
   solution?: CivicSolution;
   documents?: GeneratedDocument[];
+  caseFileMarkdown?: string;
   answers: Record<string, string | string[]>;
 }
+

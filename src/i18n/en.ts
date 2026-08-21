@@ -85,8 +85,22 @@ export const en = {
   bureaucraticText: 'Bureaucratic or Legal Text',
   simpleExplanation: 'Simple Explanation',
 
-  // Safety Disclaimer
-  safetyDisclaimer: 'CivicFlow provides civic and legal information and navigation support. It does not replace professional legal representation.',
+  // RTI Builder
+  rti: {
+    title: 'Right to Information (RTI) Application Generator',
+    subtitle: 'Generate a structured RTI application under Section 6(1) of the RTI Act, 2005 for any public authority.',
+    applicantName: 'Applicant Full Name',
+    applicantAddress: 'Postal Address for Communication',
+    publicAuthority: 'Public Authority / Body Name',
+    department: 'Division / Office',
+    informationRequested: 'Specific Information / Records Sought',
+    periodYears: 'Period / Date Range of Information',
+    format: 'Preferred Information Format',
+    previewTitle: 'Live RTI Application Draft',
+    copy: 'Copy Text',
+    print: 'Print Application',
+    copiedToast: 'RTI Draft copied to clipboard!',
+  },
 
   // General
   loading: 'Processing situation...',

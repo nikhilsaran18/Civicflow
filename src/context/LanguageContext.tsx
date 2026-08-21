@@ -13,10 +13,15 @@ const dictionaries: Record<SupportedLanguage, Dictionary> = {
   hi,
 };
 
+export type TranslateFunction = {
+  (key: string): string;
+  [key: string]: any;
+};
+
 interface LanguageContextType {
   language: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
-  t: (key: keyof Dictionary) => string;
+  t: TranslateFunction;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -45,10 +50,37 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = (key: keyof Dictionary): string => {
-    const dict = dictionaries[language] || dictionaries.en;
-    return dict[key] || dictionaries.en[key] || String(key);
+  const getNestedKey = (obj: any, path: string): string | undefined => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    const parts = path.split('.');
+    let curr = obj;
+    for (const part of parts) {
+      if (curr && typeof curr === 'object' && part in curr) {
+        curr = curr[part];
+      } else {
+        return undefined;
+      }
+    }
+    return typeof curr === 'string' ? curr : undefined;
   };
+
+  const translate = (key: string): string => {
+    const activeDict = dictionaries[language] || dictionaries.en;
+    const val = getNestedKey(activeDict, key) ?? getNestedKey(dictionaries.en, key);
+    if (val !== undefined) return val;
+
+    // Direct key lookup
+    if (activeDict[key as keyof Dictionary] && typeof activeDict[key as keyof Dictionary] === 'string') {
+      return activeDict[key as keyof Dictionary] as string;
+    }
+    if (dictionaries.en[key as keyof Dictionary] && typeof dictionaries.en[key as keyof Dictionary] === 'string') {
+      return dictionaries.en[key as keyof Dictionary] as string;
+    }
+    return key;
+  };
+
+  const activeDict = dictionaries[language] || dictionaries.en;
+  const t: TranslateFunction = Object.assign((key: string) => translate(key), activeDict, dictionaries.en);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>

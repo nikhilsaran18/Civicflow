@@ -85,8 +85,22 @@ export const hi = {
   bureaucraticText: 'सरकारी / कानूनी भाषा',
   simpleExplanation: 'सरल व्याख्या',
 
-  // Safety Disclaimer
-  safetyDisclaimer: 'सिविकफ्लो नागरिक व कानूनी जानकारी प्रदान करता है। यह किसी वकील या कानूनी सलाहकार का विकल्प नहीं है।',
+  // RTI Builder
+  rti: {
+    title: 'सूचना का अधिकार (RTI) आवेदन जनरेटर',
+    subtitle: 'RTI अधिनियम 2005 की धारा 6(1) के तहत किसी भी सार्वजनिक प्राधिकरण हेतु आवेदन जनरेट करें।',
+    applicantName: 'आवेदक का पूरा नाम',
+    applicantAddress: 'पत्राचार का पता',
+    publicAuthority: 'सार्वजनिक प्राधिकरण / विभाग',
+    department: 'प्रभाग / कार्यालय',
+    informationRequested: 'मांगी गई विशिष्ट जानकारी',
+    periodYears: 'सूचना की समयावधि',
+    format: 'सूचना का वांछित प्रारूप',
+    previewTitle: 'लाइव RTI आवेदन ड्राफ्ट',
+    copy: 'कॉपी करें',
+    print: 'प्रिंट करें',
+    copiedToast: 'RTI ड्राफ्ट क्लिपबोर्ड पर कॉपी हो गया!',
+  },
 
   // General
   loading: 'स्थिति का विश्लेषण किया जा रहा है...',

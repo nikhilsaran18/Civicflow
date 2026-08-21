@@ -1,63 +1,28 @@
 import {
   CaseUnderstanding,
   ClarificationQuestion,
+  ConfirmedFact,
+  EvidenceItem,
   CivicSolution,
-  FactItem,
   ActionPlanStep,
   ResponsibleAuthority,
   SuggestedDocument,
   GeneratedDocument,
+  QuestionAnswerPair,
+  CivicCase,
+  DynamicField,
 } from '../../types/civicIntelligence';
 import { GeminiClient, defaultGeminiClient } from './geminiClient';
 import { QuestionValidator, defaultQuestionValidator } from './questionValidator';
-import { KnowledgeService } from '../knowledgeService';
 
 export const CIVIC_SYSTEM_INSTRUCTION = `You are CivicFlow AI's Civic Intelligence Engine.
-
-You help citizens understand and navigate civic, legal-access, government-service, rights, grievance, entitlement and bureaucracy problems.
+You help Indian citizens understand and navigate civic, rights, administrative, consumer, tenancy, employment, education, healthcare, and public service problems.
 
 THERE ARE NO PREDEFINED SUPPORTED DOMAINS.
-
-Analyse every case independently.
-
-Never reuse another case's facts, questions, legal references, authorities, documents or recommendations.
-
-Use only:
-1. facts stated in the CURRENT case,
-2. clarification answers from the CURRENT case,
-3. verified information researched specifically for the CURRENT case.
-
-Never force cases into preset categories (such as Consumer, Tenant, Education, Workplace, Municipal, Healthcare, Banking, Insurance, RTI, Welfare, etc.).
-
-Do not guess missing facts.
-
-Before solving a case:
-1. understand the situation,
-2. extract confirmed facts,
-3. identify missing critical information,
-4. ask the minimum relevant clarification questions.
-
-Never ask irrelevant questions.
-Never ask for receipts, invoices, sellers, warranty, or purchase dates unless the current case narrative is explicitly a commercial purchase transaction.
-Never mention higher education regulations, UGC, Vice-Chancellor, Registrar, or original certificates unless the current case narrative explicitly involves educational certificates or university disputes.
-
-Never invent:
-- institution,
-- authority,
-- department,
-- law,
-- regulation,
-- scheme,
-- portal,
-- deadline,
-- document,
-- location.
-
-If information is insufficient, set readyForSolution to false and ask for clarification.
-If enough information exists, research the case and create a practical, citizen-friendly action plan.
-
-The goal is not classification.
-The goal is: UNDERSTAND → CLARIFY → RESEARCH → EXPLAIN → ACT.`;
+Analyse every case independently using ONLY the current case facts.
+Never force cases into preset categories or static questionnaires.
+Never invent institutions, authorities, laws, portal links, or statutory deadlines.
+If an authority is uncertain, set responsibleAuthority to null.`;
 
 export class CivicIntelligenceEngine {
   private client: GeminiClient;
@@ -72,562 +37,148 @@ export class CivicIntelligenceEngine {
   }
 
   /**
-   * STAGE 1 & STAGE 2: Understand situation and generate dynamic clarification questions
+   * STAGE 1: Initial Case Understanding
    */
-  public async analyzeCase(
-    userDescription: string,
-    answers: Record<string, string | string[]> = {}
-  ): Promise<{
-    understanding: CaseUnderstanding;
-    questions: ClarificationQuestion[];
-  }> {
-    const combinedText = `${userDescription}\n${Object.entries(answers)
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-      .join('\n')}`;
-
-    // Try Backend Gemini API
+  public async understandCase(
+    userDescription: string
+  ): Promise<CaseUnderstanding> {
     const isConfigured = await this.client.isConfigured();
     if (isConfigured) {
-      const backendRes = await this.client.callBackend<{
-        situationSummary: string;
-        confirmedFacts: { id: string; fact: string; source: 'initial_statement' | 'clarification_answer' }[];
-        missingCriticalInformation: string[];
-        aiCaseDescription: string;
-        inferredGoal?: string;
-        clarificationQuestions: ClarificationQuestion[];
-        readyForSolution: boolean;
-        readinessReason: string;
-        confidence: 'low' | 'medium' | 'high';
-      }>('understand', { userDescription, answers });
+      const res = await this.client.callBackend<CaseUnderstanding>('understand-case', {
+        userDescription,
+      });
 
-      if (backendRes && backendRes.situationSummary) {
-        const candidateQuestions = backendRes.clarificationQuestions || [];
-        const validatedQuestions = await this.validator.filterQuestions(userDescription, candidateQuestions);
-
-        const understanding: CaseUnderstanding = {
-          situationSummary: backendRes.situationSummary,
-          summary: backendRes.situationSummary,
-          confirmedFacts: backendRes.confirmedFacts || [
-            { id: 'f1', fact: userDescription, source: 'initial_statement' }
-          ],
-          knownFacts: (backendRes.confirmedFacts || []).map(f => ({ label: 'Fact', value: f.fact })),
-          missingCriticalInformation: backendRes.missingCriticalInformation || [],
-          desiredOutcomeKnown: Boolean(backendRes.inferredGoal),
-          desiredOutcome: backendRes.inferredGoal,
-          aiCaseDescription: backendRes.aiCaseDescription || 'Civic Matter',
-          confidence: backendRes.confidence || 'medium',
-          readyForSolution: backendRes.readyForSolution,
-          readinessReason: backendRes.readinessReason || 'Case understanding completed.',
-        };
-
+      if (res && res.situationSummary) {
         return {
-          understanding,
-          questions: backendRes.readyForSolution ? [] : validatedQuestions,
+          caseTitle: res.caseTitle || this.deriveTitleFallback(userDescription),
+          situationSummary: res.situationSummary,
+          summary: res.situationSummary,
+          confirmedFacts: res.confirmedFacts && res.confirmedFacts.length > 0
+            ? res.confirmedFacts
+            : [{ id: 'f1', fact: userDescription, source: 'initial_statement' }],
+          inferences: res.inferences || [],
+          unknowns: res.unknowns || [],
+          parties: res.parties || [],
+          responsiblePartyType: res.responsiblePartyType || 'unknown',
+          likelyGoal: res.likelyGoal || 'Resolve issue',
+          desiredOutcome: res.likelyGoal,
+          aiCaseDescription: res.caseTitle || this.deriveTitleFallback(userDescription),
+          confidence: res.confidence || 'medium',
         };
       }
     }
 
-    // Dynamic Intelligent Rule-Free Engine (Works deterministically offline/demo)
-    return this.rulelessDynamicAnalysis(userDescription, answers);
+    // Dynamic Offline Fallback
+    return this.fallbackUnderstanding(userDescription);
   }
 
   /**
-   * Ruleless dynamic reasoning engine for Stage 1 & 2 without fixed domain templates
+   * STAGE 2, 3, 4: Sequential Question Generator (Generates Q1, Q2, Q3 one by one)
    */
-  private async rulelessDynamicAnalysis(
+  public async generateNextQuestion(
     userDescription: string,
-    answers: Record<string, string | string[]> = {}
-  ): Promise<{
-    understanding: CaseUnderstanding;
-    questions: ClarificationQuestion[];
-  }> {
-    const text = userDescription.trim();
-    const lower = text.toLowerCase();
-    const confirmedFacts: { id: string; fact: string; source: 'initial_statement' | 'clarification_answer' }[] = [
-      { id: 'f1', fact: `User stated: "${text}"`, source: 'initial_statement' }
-    ];
-    const knownFacts: FactItem[] = [
-      { label: 'Initial Statement', value: text }
-    ];
+    confirmedFacts: ConfirmedFact[],
+    previousQA: QuestionAnswerPair[],
+    questionNumber: number
+  ): Promise<ClarificationQuestion | null> {
+    if (questionNumber > 3) return null;
 
-    Object.entries(answers).forEach(([key, val], idx) => {
-      const valStr = Array.isArray(val) ? val.join(', ') : val;
-      confirmedFacts.push({
-        id: `ans_${idx}`,
-        fact: `${key.replace(/_/g, ' ')}: ${valStr}`,
-        source: 'clarification_answer'
-      });
-      knownFacts.push({
-        label: key.replace(/_/g, ' ').toUpperCase(),
-        value: valStr
-      });
-    });
+    const isConfigured = await this.client.isConfigured();
+    if (isConfigured) {
+      const res = await this.client.callBackend<{ question: ClarificationQuestion }>(
+        'generate-next-question',
+        {
+          userDescription,
+          confirmedFacts,
+          previousQA,
+          questionNumber,
+        }
+      );
 
-    const candidateQuestions: ClarificationQuestion[] = [];
-    let readyForSolution = false;
-    let aiCaseDescription = 'Civic Concern';
-    let summary = `Citizen situation: "${text.length > 90 ? text.substring(0, 90) + '...' : text}"`;
-    let desiredOutcomeKnown = false;
-    let desiredOutcome: string | undefined = undefined;
-
-    // Detect case dynamics strictly by facts provided:
-    if (lower.includes('tuition') || (lower.includes('teacher') && lower.includes('fee')) || (lower.includes('tutor') && lower.includes('refund'))) {
-      aiCaseDescription = 'Private Tuition Fee Refund Dispute';
-      summary = 'User paid tuition fees to a private teacher/tutor and reports that refund is being refused.';
-      desiredOutcome = 'Refund of paid tuition fees from tutor/institution';
-      desiredOutcomeKnown = true;
-
-      if (!answers['receipt_or_proof']) {
-        candidateQuestions.push({
-          id: 'receipt_or_proof',
-          question: 'Do you have any receipt, bank transaction reference, or written message (such as WhatsApp/email) showing the fee payment?',
-          reason: 'Helps establish proof of payment to the tuition teacher.',
-          type: 'single_select',
-          options: ['Yes, I have bank/UPI payment proof or chat messages', 'Yes, I have a physical fee receipt', 'No written proof, only cash payment', 'Other'],
-          required: true,
-        });
-      }
-      if (!answers['refund_terms']) {
-        candidateQuestions.push({
-          id: 'refund_terms',
-          question: 'Was there any verbal or written refund policy communicated before or at the time of payment?',
-          reason: 'Determines agreed terms regarding cancellation or fee refund.',
-          type: 'single_select',
-          options: ['No refund policy was mentioned', 'Teacher promised refund if classes discontinued', 'Teacher stated non-refundable policy', 'Not sure'],
-          required: true,
-        });
-      }
-      if (answers['receipt_or_proof'] || answers['refund_terms']) {
-        readyForSolution = true;
-      }
-    } else if (lower.includes('street light') || lower.includes('streetlamp') || lower.includes('light near my house')) {
-      aiCaseDescription = 'Public Street Lighting Outage';
-      summary = 'Unmaintained or non-functional public street lighting in municipal locality.';
-      desiredOutcome = 'Restoration of street light functionality by local municipal authority';
-      desiredOutcomeKnown = true;
-
-      if (!answers['location']) {
-        candidateQuestions.push({
-          id: 'location',
-          question: 'Which city/locality and street is this light located on?',
-          reason: 'Identifies the specific municipal ward or electrical division responsible.',
-          type: 'text',
-          required: true,
-        });
-      }
-      if (!answers['prior_report']) {
-        candidateQuestions.push({
-          id: 'prior_report',
-          question: 'Have you already submitted a complaint to your local municipal office or ward councillor?',
-          reason: 'Determines whether this requires an initial municipal complaint or escalation.',
-          type: 'single_select',
-          options: ['No, I have not reported it yet', 'Yes, but received no response', 'Yes, they gave a complaint reference number'],
-          required: true,
-        });
-      }
-      if (answers['location'] || answers['prior_report']) {
-        readyForSolution = true;
-      }
-    } else if (lower.includes('certificate') || lower.includes('marksheet') || lower.includes('college') || lower.includes('university')) {
-      aiCaseDescription = 'Higher Education Certificate Withholding';
-      summary = 'Educational institution retaining original student certificates or marksheets.';
-      desiredOutcome = 'Return of withheld original certificates';
-      desiredOutcomeKnown = true;
-
-      if (!answers['location']) {
-        candidateQuestions.push({
-          id: 'location',
-          question: 'Which state and institution (college or university) is withholding the certificates?',
-          reason: 'Establishes university jurisdiction and applicable UGC regulations.',
-          type: 'text',
-          required: true,
-        });
-      }
-      if (answers['location']) {
-        readyForSolution = true;
-      }
-    } else if (lower.includes('pension')) {
-      aiCaseDescription = 'Public Pension Disruption Matter';
-      summary = 'Discontinuation or delay of pension disbursements.';
-      desiredOutcome = 'Resumption of pension payouts and payment of arrears';
-      desiredOutcomeKnown = true;
-
-      if (!answers['pension_type']) {
-        candidateQuestions.push({
-          id: 'pension_type',
-          question: 'What type of pension is this (e.g. State Old Age, Central Gov, EPFO)?',
-          reason: 'Pinpoints the correct treasury or nodal pension department.',
-          type: 'single_select',
-          options: ['State Old Age / Social Welfare Pension', 'Central Government Pension', 'EPFO / Private Employee Pension', 'Other / Not Sure'],
-          required: true,
-        });
-      }
-      if (answers['pension_type']) {
-        readyForSolution = true;
-      }
-    } else if (lower.includes('road') && (lower.includes('spent') || lower.includes('money') || lower.includes('repair') || lower.includes('cost'))) {
-      aiCaseDescription = 'Public Works Financial Transparency Request';
-      summary = 'Citizen seeking official records regarding municipal expenditure and work orders for road repairs.';
-      desiredOutcome = 'Obtain certified official records under Right to Information Act 2005';
-      desiredOutcomeKnown = true;
-
-      if (!answers['location']) {
-        candidateQuestions.push({
-          id: 'location',
-          question: 'What is the specific road, ward number, and municipality/city name?',
-          reason: 'Required to direct the RTI application to the correct Public Information Officer (PIO).',
-          type: 'text',
-          required: true,
-        });
-      }
-      if (answers['location']) {
-        readyForSolution = true;
-      }
-    } else if (lower.includes('haven\'t paid') || lower.includes('not paid') || lower.includes('gave me no money') || lower.includes('my money')) {
-      // Ambiguous case (TEST 5)
-      aiCaseDescription = 'Unresolved Payment Claim';
-      summary = 'Financial non-payment claim reported without identified counterparty.';
-      desiredOutcomeKnown = false;
-
-      if (!answers['payer_identity']) {
-        candidateQuestions.push({
-          id: 'payer_identity',
-          question: 'Who was supposed to pay you?',
-          reason: 'Legal remedies differ between employers, government schemes, commercial clients, and private individuals.',
-          type: 'single_select',
-          options: [
-            'Government Department / Public Scheme',
-            'Employer / Organization',
-            'Company / Commercial Business',
-            'Client / Individual Customer',
-            'Private Tutor / Service Provider',
-            'Other'
-          ],
-          required: true,
-        });
-      } else {
-        readyForSolution = true;
-      }
-    } else {
-      // Novel unseen civic issue
-      aiCaseDescription = 'Civic Service & Administrative Issue';
-      summary = `Issue reported: "${text}"`;
-      if (!answers['goal']) {
-        candidateQuestions.push({
-          id: 'goal',
-          question: 'What specific outcome would you like to achieve in this matter?',
-          reason: 'Helps formulate the most direct administrative or legal recourse.',
-          type: 'single_select',
-          options: [
-            'Get the service restored or fixed',
-            'Obtain official information or public records',
-            'Submit a formal complaint or grievance',
-            'Recover money paid or fees',
-            'Understand legal rights and guidance'
-          ],
-          required: true,
-        });
-      } else {
-        readyForSolution = true;
+      if (res && res.question && res.question.question) {
+        const isValid = await this.validator.validateQuestion(userDescription, res.question);
+        if (isValid.relevant && !isValid.duplicate) {
+          return res.question;
+        }
       }
     }
 
-    // Filter questions through Question Validator
-    const validatedQuestions = await this.validator.filterQuestions(text, candidateQuestions);
-
-    if (validatedQuestions.length === 0 && Object.keys(answers).length > 0) {
-      readyForSolution = true;
-    }
-
-    const understanding: CaseUnderstanding = {
-      situationSummary: summary,
-      summary,
-      confirmedFacts,
-      knownFacts,
-      missingCriticalInformation: readyForSolution ? [] : validatedQuestions.map(q => q.reason),
-      desiredOutcomeKnown,
-      desiredOutcome,
-      aiCaseDescription,
-      confidence: Object.keys(answers).length > 0 ? 'high' : 'medium',
-      readyForSolution,
-      readinessReason: readyForSolution
-        ? 'Sufficient facts gathered to generate tailored solution.'
-        : 'Additional clarification needed to determine appropriate authority and action plan.',
-    };
-
-    return { understanding, questions: readyForSolution ? [] : validatedQuestions };
+    // Dynamic Offline Fallback Question Generator
+    return this.fallbackQuestionGenerator(userDescription, previousQA, questionNumber);
   }
 
   /**
-   * STAGES 5 - 9: Generate complete solution path, action plan, authority, sources, and document suggestions
+   * STAGE 5: Recommend Dynamic Evidence Items
+   */
+  public async recommendEvidence(
+    userDescription: string,
+    confirmedFacts: ConfirmedFact[],
+    qAndA: QuestionAnswerPair[]
+  ): Promise<EvidenceItem[]> {
+    const isConfigured = await this.client.isConfigured();
+    if (isConfigured) {
+      const res = await this.client.callBackend<{ recommendedEvidence: EvidenceItem[] }>(
+        'recommend-evidence',
+        {
+          userDescription,
+          confirmedFacts,
+          qAndA,
+        }
+      );
+
+      if (res && res.recommendedEvidence && res.recommendedEvidence.length > 0) {
+        return res.recommendedEvidence;
+      }
+    }
+
+    // Dynamic Offline Fallback Evidence Recommendation
+    return this.fallbackEvidenceRecommendation(userDescription);
+  }
+
+  /**
+   * STAGE 6: Full Case Analysis & Solution Generation
    */
   public async generateSolution(
     userDescription: string,
     understanding: CaseUnderstanding,
-    answers: Record<string, string | string[]> = {}
+    qAndA: QuestionAnswerPair[],
+    evidenceFacts: ConfirmedFact[] = []
   ): Promise<CivicSolution> {
-    // Try Backend Gemini API
     const isConfigured = await this.client.isConfigured();
     if (isConfigured) {
-      const backendRes = await this.client.callBackend<CivicSolution>('research-and-solve', {
+      const res = await this.client.callBackend<CivicSolution>('solve-case', {
         userDescription,
         understanding,
-        answers,
+        qAndA,
+        evidenceFacts,
       });
-      if (backendRes && backendRes.situationSummary) {
-        return backendRes;
+
+      if (res && res.situationSummary) {
+        return {
+          caseTitle: res.caseTitle || understanding.caseTitle || 'Civic Case Strategy',
+          situationSummary: res.situationSummary,
+          userGoal: res.userGoal || understanding.likelyGoal || 'Obtain resolution',
+          whatCivicFlowFound: res.whatCivicFlowFound || res.explanation || 'Case analyzed under applicable rights.',
+          explanation: res.whatCivicFlowFound || res.explanation,
+          rightsAndConsiderations: res.rightsAndConsiderations || [],
+          options: res.options || [],
+          recommendedNextStep: res.recommendedNextStep || { title: 'Proceed with Action Step', explanation: 'Follow step 1' },
+          actionPlan: res.actionPlan || [],
+          responsibleAuthority: res.responsibleAuthority !== undefined ? res.responsibleAuthority : null,
+          sources: res.sources || [],
+          suggestedDocuments: res.suggestedDocuments || [],
+          limitations: res.limitations || ['CivicFlow provides civic navigation support and does not replace formal legal counsel.'],
+          confidence: res.confidence || 'medium',
+        };
       }
     }
 
-    // Dynamic Ruleless Fallback Solution Generator
-    return this.rulelessSolutionGenerator(userDescription, understanding, answers);
-  }
-
-  private rulelessSolutionGenerator(
-    userDescription: string,
-    understanding: CaseUnderstanding,
-    answers: Record<string, string | string[]> = {}
-  ): CivicSolution {
-    const text = userDescription.toLowerCase();
-    const sources = KnowledgeService.getRelevantSources(userDescription);
-    const location = (answers['location'] as string) || 'Your Local Area';
-
-    let situationSummary = understanding.summary || `Issue regarding: "${userDescription}"`;
-    let userGoal = understanding.desiredOutcome || 'Resolve issue and obtain fair remedy';
-    let explanation = '';
-    let options = [];
-    let recommendedNextStep = { title: '', explanation: '' };
-    let actionPlan: ActionPlanStep[] = [];
-    let responsibleAuthority: ResponsibleAuthority | undefined = undefined;
-    let suggestedDocuments: SuggestedDocument[] = [];
-
-    if (text.includes('tuition') || (text.includes('teacher') && text.includes('fee')) || (text.includes('tutor') && text.includes('refund'))) {
-      explanation = 'Private tuition fee disputes fall under service deficiency and contractual refund principles. If a teacher or private institute fails to deliver agreed classes or refuses a legitimate fee refund, the citizen has a right to issue a formal legal demand notice and approach consumer or small-claims grievance bodies.';
-      options = [
-        {
-          title: 'Formal Demand Notice to Teacher / Institute',
-          description: 'Serve a formal written demand detailing fee payment proof and requesting refund within 7 working days.',
-          considerations: ['Establishes written notice for legal recovery', 'Resolves most private fee disputes without litigation'],
-        },
-        {
-          title: 'District Consumer Disputes Redressal Forum Filing',
-          description: 'File an online complaint on National Consumer Helpline (NCH - 1915) or e-Daakhil portal for deficiency of service.',
-          considerations: ['Official government pre-litigation mechanism', 'Applies to paid educational/tuition service providers'],
-        },
-      ];
-      recommendedNextStep = {
-        title: 'Send Formal Demand Letter for Fee Refund',
-        explanation: 'Sending a structured written demand notice creates an official record and gives the teacher/institute a final opportunity to refund before legal escalation.',
-      };
-      actionPlan = [
-        {
-          order: 1,
-          title: 'Gather Payment Evidence & Communication Logs',
-          description: 'Compile UPI transaction receipts, bank statements, and chat messages showing fee payment and refund requests.',
-          whyItMatters: 'Serves as primary evidence of payment and refusal.',
-          evidenceNeeded: ['UPI / Bank Payment Receipt', 'WhatsApp or SMS chat logs'],
-          status: 'completed',
-        },
-        {
-          order: 2,
-          title: 'Serve Formal Written Demand Notice for Refund',
-          description: 'Send formal demand notice via Registered Post / Email giving 7 days to refund fee.',
-          whyItMatters: 'Mandatory notice step prior to filing consumer grievance.',
-          authority: 'Tuition Teacher / Coaching Institute Management',
-          status: 'in_progress',
-        },
-        {
-          order: 3,
-          title: 'File Pre-Litigation Grievance on National Consumer Portal (NCH 1915)',
-          description: 'If refund is not received within 7 days, log online complaint on consumerhelpline.gov.in or call 1915.',
-          whyItMatters: 'Triggers official government consumer grievance notice to service provider.',
-          authority: 'National Consumer Helpline (NCH - 1915)',
-          status: 'not_started',
-        },
-      ];
-      responsibleAuthority = {
-        name: 'District Consumer Disputes Redressal Commission / National Consumer Helpline (NCH)',
-        type: 'Consumer Protection Statutory Authority',
-        relevance: 'Oversees service deficiency disputes and unfair trade practices for paid services.',
-        actionableInfo: 'Lodge grievance online at consumerhelpline.gov.in or call 1915.',
-        officialLink: 'https://consumerhelpline.gov.in',
-      };
-      suggestedDocuments = [
-        {
-          type: 'refund_demand',
-          title: 'Demand Notice for Refund of Tuition Fees',
-          reason: 'Formal written demand notice citing payment proof and 7-day refund deadline.',
-        },
-        {
-          type: 'consumer_complaint',
-          title: 'Consumer Complaint Draft (NCH 1915)',
-          reason: 'Grievance filing draft for deficiency of tuition service.',
-        },
-      ];
-    } else if (text.includes('street light') || text.includes('lamp')) {
-      explanation = 'Municipal local bodies have a statutory duty under State Urban Local Bodies Acts to maintain public street lighting for community safety.';
-      options = [
-        {
-          title: 'Direct Municipal Electrical Department Grievance',
-          description: 'Lodge an official repair ticket with the local Ward Office or Municipal Electrical Works Division.',
-          considerations: ['Direct local remedy', 'Generates official complaint reference number'],
-        },
-        {
-          title: 'Escalate via State Public Grievance Portal',
-          description: 'If unresolved in 5 days, escalate to Municipal Commissioner or State Citizen Grievance Portal.',
-          considerations: ['Enforces executive oversight on local ward staff'],
-        },
-      ];
-      recommendedNextStep = {
-        title: 'Submit Formal Municipal Street Light Repair Complaint',
-        explanation: 'Filing a formal complaint with exact location details triggers an official municipal repair dispatch ticket.',
-      };
-      actionPlan = [
-        {
-          order: 1,
-          title: 'Identify Location & Pole Landmark',
-          description: 'Note exact street address, ward number, and pole identifier (if marked).',
-          whyItMatters: 'Enables repair crew to locate malfunctioning fixture immediately.',
-          evidenceNeeded: ['Location address / landmark', 'Photograph of non-functional light'],
-          status: 'completed',
-        },
-        {
-          order: 2,
-          title: 'Submit Complaint to Municipal Public Works Division',
-          description: `Submit complaint to ${location} Municipal Electrical / Public Works Department.`,
-          whyItMatters: 'Generates official complaint reference number.',
-          authority: `${location} Municipal Corporation`,
-          status: 'in_progress',
-        },
-        {
-          order: 3,
-          title: 'Track Repair Action',
-          description: 'Allow 3 to 5 days for municipal maintenance crew action.',
-          whyItMatters: 'Ensures repair is completed or escalated.',
-          status: 'not_started',
-        },
-      ];
-      responsibleAuthority = {
-        name: `${location} Municipal Corporation — Electrical Division`,
-        type: 'Urban Local Body (Municipal Authority)',
-        relevance: 'Statutorily responsible for public street lighting and municipal electrical maintenance.',
-        actionableInfo: 'Submit via municipal helpline or local Ward Office.',
-        officialLink: 'https://mohua.gov.in',
-      };
-      suggestedDocuments = [
-        {
-          type: 'complaint',
-          title: 'Municipal Street Light Repair Complaint',
-          reason: 'Formal complaint to Municipal Executive Engineer (Electrical).',
-        },
-      ];
-    } else if (text.includes('road') && (text.includes('spent') || text.includes('money') || text.includes('repair'))) {
-      explanation = 'Under Section 6 of the Right to Information Act 2005, citizens have a statutory right to inspect public works records, contractor agreements, sanctioned budgets, and measurement books for municipal road repairs.';
-      options = [
-        {
-          title: 'File Formal RTI Application with Public Information Officer (PIO)',
-          description: 'Seek itemized expenditure statements, tender work orders, and completion certificates.',
-          considerations: ['Statutory 30-day response deadline under law'],
-        },
-      ];
-      recommendedNextStep = {
-        title: 'Submit RTI Application Seeking Expenditure Records',
-        explanation: 'Filing an RTI application requires the public authority to provide certified copies of financial expenditure.',
-      };
-      actionPlan = [
-        {
-          order: 1,
-          title: 'Draft Specific Information Queries',
-          description: 'Formulate precise questions requesting budget sanctioned, amount disbursed, contractor name, and work orders.',
-          whyItMatters: 'Precise queries prevent vague or evasive replies from PIO.',
-          status: 'in_progress',
-        },
-        {
-          order: 2,
-          title: 'Submit RTI to Municipal Public Information Officer',
-          description: `Submit application along with Rs. 10 fee to PIO of ${location} Municipal Corporation.`,
-          whyItMatters: 'Triggers statutory 30-day countdown for reply.',
-          authority: `${location} PIO`,
-          status: 'not_started',
-        },
-      ];
-      responsibleAuthority = {
-        name: `Public Information Officer (PIO), ${location} Municipal Corporation`,
-        type: 'Public Information Authority under RTI Act 2005',
-        relevance: 'Statutorily required to disclose public expenditure records.',
-        actionableInfo: 'Submit online via state RTI portal or by Registered Post.',
-        officialLink: 'https://rtionline.gov.in',
-      };
-      suggestedDocuments = [
-        {
-          type: 'rti',
-          title: 'RTI Application on Road Repair Expenditure',
-          reason: 'Formal information request under RTI Act 2005.',
-        },
-      ];
-    } else {
-      explanation = 'Based on the facts provided, you have a legitimate right to seek administrative resolution, written clarification, or formal review from the relevant authority or provider.';
-      options = [
-        {
-          title: 'Formal Administrative Representation',
-          description: 'Submit an official written representation detailing facts, evidence, and requested remedy.',
-          considerations: ['Establishes official written record'],
-        },
-      ];
-      recommendedNextStep = {
-        title: 'Submit Structured Written Representation',
-        explanation: 'Submitting a structured written representation creates a binding record for review.',
-      };
-      actionPlan = [
-        {
-          order: 1,
-          title: 'Organize Timeline and Evidence',
-          description: 'Compile dates, reference numbers, and facts.',
-          whyItMatters: 'Clear timelines increase response speed.',
-          status: 'in_progress',
-        },
-        {
-          order: 2,
-          title: 'Deliver Representation to Nodal Office',
-          description: 'Submit formal letter or register on official portal.',
-          whyItMatters: 'Initiates formal administrative review.',
-          status: 'not_started',
-        },
-      ];
-      responsibleAuthority = {
-        name: `${location} Nodal Authority`,
-        type: 'Public Service Authority',
-        relevance: 'Oversees service compliance and public grievances.',
-        actionableInfo: 'Submit directly to head of department or via official portal.',
-      };
-      suggestedDocuments = [
-        {
-          type: 'representation',
-          title: 'Formal Written Representation',
-          reason: 'Official statement of facts and request for action.',
-        },
-      ];
-    }
-
-    return {
-      situationSummary,
-      userGoal,
-      explanation,
-      options,
-      recommendedNextStep,
-      actionPlan,
-      sources,
-      suggestedDocuments,
-      responsibleAuthority,
-      confidence: 'high',
-      limitations: [
-        'CivicFlow provides civic navigation and legal information support. It does not replace professional legal representation.',
-      ],
-    };
+    // Dynamic Offline Fallback Solution
+    return this.fallbackSolutionGenerator(userDescription, understanding, qAndA);
   }
 
   /**
-   * STAGE 9 — Document Generator for Action Studio
+   * STAGE 7: Action Studio Dynamic Document Draft
    */
   public async generateDocumentDraft(
     docType: string,
@@ -636,26 +187,364 @@ export class CivicIntelligenceEngine {
     answers: Record<string, string | string[]> = {},
     solution?: CivicSolution
   ): Promise<GeneratedDocument> {
-    // Try Backend Gemini API
     const isConfigured = await this.client.isConfigured();
     if (isConfigured) {
-      const backendRes = await this.client.callBackend<GeneratedDocument>('generate-document', {
+      const res = await this.client.callBackend<GeneratedDocument>('generate-document', {
         docType,
         caseTitle,
         userDescription,
         answers,
         solution,
       });
-      if (backendRes && backendRes.previewMarkdown) {
-        return backendRes;
+
+      if (res && res.previewMarkdown) {
+        return {
+          id: res.id || `doc_${Date.now()}`,
+          caseId: res.caseId || 'case_active',
+          documentType: docType,
+          title: res.title || 'Dynamic Legal Document Draft',
+          fields: res.fields || {},
+          dynamicFields: res.dynamicFields || [],
+          previewMarkdown: res.previewMarkdown,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
       }
     }
 
-    // Dynamic Ruleless Fallback Document Generator
-    return this.rulelessDocumentGenerator(docType, caseTitle, userDescription, answers, solution);
+    // Dynamic Offline Fallback Document Draft
+    return this.fallbackDocumentGenerator(docType, caseTitle, userDescription, answers, solution);
   }
 
-  private rulelessDocumentGenerator(
+  /**
+   * STAGE 8: Professional Case File Compilation
+   */
+  public async generateCaseFile(caseData: CivicCase): Promise<string> {
+    const isConfigured = await this.client.isConfigured();
+    if (isConfigured) {
+      const res = await this.client.callBackend<{ caseFileMarkdown: string }>('generate-case-file', {
+        caseData,
+      });
+      if (res && res.caseFileMarkdown) {
+        return res.caseFileMarkdown;
+      }
+    }
+
+    // Local Format Generator
+    return this.compileLocalCaseFile(caseData);
+  }
+
+  // --- Dynamic Fallback Helpers (offline / no API key) ---
+
+  private deriveTitleFallback(text: string): string {
+    const lower = text.toLowerCase();
+    if (lower.includes('deposit') || lower.includes('rent') || lower.includes('landlord')) return 'Security Deposit Refund Dispute';
+    if (lower.includes('light') || lower.includes('lamp') || lower.includes('street')) return 'Municipal Streetlight Repair Matter';
+    if (lower.includes('salary') || lower.includes('wage') || lower.includes('employer')) return 'Unpaid Salary Dispute';
+    if (lower.includes('phone') || lower.includes('refund') || lower.includes('seller')) return 'Product Refund Dispute';
+    if (lower.includes('certificate') || lower.includes('marksheet') || lower.includes('college')) return 'Educational Certificate Withholding';
+    if (lower.includes('pension')) return 'Pension Disbursement Delay';
+    if (lower.includes('road') && (lower.includes('spent') || lower.includes('money'))) return 'Road Repair Expenditure Inquiry';
+    if (lower.includes('bill') || lower.includes('electricity')) return 'Utility Billing Grievance';
+    if (lower.includes('insurance') || lower.includes('claim')) return 'Insurance Claim Rejection';
+    return 'Civic Assistance Matter';
+  }
+
+  private fallbackUnderstanding(userDescription: string): CaseUnderstanding {
+    const title = this.deriveTitleFallback(userDescription);
+    return {
+      caseTitle: title,
+      situationSummary: `Citizen reported: "${userDescription}"`,
+      summary: `Citizen reported: "${userDescription}"`,
+      confirmedFacts: [{ id: 'f1', fact: userDescription, source: 'initial_statement' }],
+      inferences: ['Issue reported directly by citizen'],
+      unknowns: ['Specific timeline', 'Written notices sent'],
+      parties: [{ name: 'Opposing Party / Authority', type: 'unknown' }],
+      responsiblePartyType: 'contextual',
+      likelyGoal: 'Resolve matter and obtain appropriate remedy',
+      desiredOutcome: 'Resolve matter and obtain appropriate remedy',
+      aiCaseDescription: title,
+      confidence: 'medium',
+    };
+  }
+
+  private fallbackQuestionGenerator(
+    userDescription: string,
+    previousQA: QuestionAnswerPair[],
+    questionNumber: number
+  ): ClarificationQuestion {
+    const text = userDescription.toLowerCase();
+
+    if (text.includes('landlord') || text.includes('deposit') || text.includes('tenant')) {
+      if (questionNumber === 1) {
+        return {
+          id: 'q1_tenancy_agreement',
+          question: 'Do you have a written tenancy/rental agreement specifying the security deposit amount?',
+          reason: 'Helps establish contractual refund obligation.',
+          type: 'single_select',
+          options: ['Yes, written registered/signed agreement', 'Verbal agreement only', 'Agreement expired recently'],
+          required: true,
+        };
+      }
+      if (questionNumber === 2) {
+        return {
+          id: 'q2_move_out_notice',
+          question: 'Did you provide formal notice before moving out, and were any property damages claimed by the landlord?',
+          reason: 'Determines whether landlord has any legal ground to withhold deductions.',
+          type: 'single_select',
+          options: ['Gave full notice, no damage', 'Gave notice, minor wear-and-tear claimed', 'Moved out suddenly'],
+          required: true,
+        };
+      }
+      return {
+        id: 'q3_prior_communication',
+        question: 'Have you sent a written message (WhatsApp, email, letter) requesting return of deposit?',
+        reason: 'Establishes whether landlord was formally put on notice for repayment.',
+        type: 'single_select',
+        options: ['Yes, written reminders sent without response', 'Landlord refused verbally', 'Have not sent formal written demand yet'],
+        required: true,
+      };
+    }
+
+    if (text.includes('street light') || text.includes('lamp') || text.includes('light near')) {
+      if (questionNumber === 1) {
+        return {
+          id: 'q1_location',
+          question: 'What is the exact locality, street name, and ward number of the malfunctioning light?',
+          reason: 'Pinpoints the exact municipal ward office responsible for repair dispatch.',
+          type: 'text',
+          required: true,
+        };
+      }
+      if (questionNumber === 2) {
+        return {
+          id: 'q2_duration',
+          question: 'How long has this street light been out of order?',
+          reason: 'Establishes severity of municipal maintenance negligence.',
+          type: 'single_select',
+          options: ['Under 7 days', '10 to 30 days', 'Over a month'],
+          required: true,
+        };
+      }
+      return {
+        id: 'q3_prior_complaint',
+        question: 'Have you or local residents already lodged a complaint with the municipal office?',
+        reason: 'Determines whether this requires initial reporting or escalation.',
+        type: 'single_select',
+        options: ['Not reported yet', 'Reported but no reference number given', 'Have official complaint reference number'],
+        required: true,
+      };
+    }
+
+    if (text.includes('phone') || text.includes('seller') || text.includes('refund')) {
+      if (questionNumber === 1) {
+        return {
+          id: 'q1_invoice_receipt',
+          question: 'Do you have an invoice, bill, or digital transaction receipt for the purchase?',
+          reason: 'Essential to prove consumer transaction.',
+          type: 'single_select',
+          options: ['Yes, tax invoice available', 'Bank/UPI statement only', 'No receipt'],
+          required: true,
+        };
+      }
+      if (questionNumber === 2) {
+        return {
+          id: 'q2_defect_timeline',
+          question: 'When did the product stop working, and is it under manufacturer warranty?',
+          reason: 'Establishes warranty claim validity.',
+          type: 'single_select',
+          options: ['Stopped within return window', 'Under active manufacturer warranty', 'Warranty expired'],
+          required: true,
+        };
+      }
+      return {
+        id: 'q3_seller_response',
+        question: 'What reason did the seller or authorized service center give for refusing refund/repair?',
+        reason: 'Determines whether this constitutes deficiency of service under Consumer Protection Act.',
+        type: 'textarea',
+        required: true,
+      };
+    }
+
+    // Generic fallbacks for Q1, Q2, Q3
+    if (questionNumber === 1) {
+      return {
+        id: `gen_q1_${Date.now()}`,
+        question: 'When did this issue first occur or when did you last communicate with the opposing party?',
+        reason: 'Establishes the timeline of events for legal recourse.',
+        type: 'single_select',
+        options: ['Within the last 7 days', '1 to 4 weeks ago', 'Over a month ago'],
+        required: true,
+      };
+    }
+    if (questionNumber === 2) {
+      return {
+        id: `gen_q2_${Date.now()}`,
+        question: 'Do you have written proof (messages, receipts, letters, emails, or agreements) regarding this matter?',
+        reason: 'Identifies available documentary evidence.',
+        type: 'single_select',
+        options: ['Yes, written documents/messages available', 'Partial proof available', 'Verbal communication only'],
+        required: true,
+      };
+    }
+    return {
+      id: `gen_q3_${Date.now()}`,
+      question: 'What specific primary outcome do you wish to achieve?',
+      reason: 'Aligns the final action plan with your primary goal.',
+      type: 'single_select',
+      options: ['Full monetary refund / payment', 'Service repair or restoration', 'Official public records / information', 'Formal written apology & grievance resolution'],
+      required: true,
+    };
+  }
+
+  private fallbackEvidenceRecommendation(userDescription: string): EvidenceItem[] {
+    const lower = userDescription.toLowerCase();
+
+    if (lower.includes('deposit') || lower.includes('landlord') || lower.includes('rent')) {
+      return [
+        { id: 'ev1', title: 'Rental / Tenancy Agreement', reason: 'Shows security deposit amount and refund clause', priority: 'recommended' },
+        { id: 'ev2', title: 'Deposit Payment Receipt / UPI Record', reason: 'Proves transfer of funds to landlord', priority: 'recommended' },
+        { id: 'ev3', title: 'WhatsApp / Email Communication Logs', reason: 'Proves request for refund and landlord response', priority: 'optional' },
+      ];
+    }
+    if (lower.includes('phone') || lower.includes('seller') || lower.includes('refund')) {
+      return [
+        { id: 'ev1', title: 'Tax Invoice / Cash Memo', reason: 'Proves purchase transaction and price paid', priority: 'recommended' },
+        { id: 'ev2', title: 'Service Center Job Sheet / Rejection Note', reason: 'Proves reported defect and service refusal', priority: 'recommended' },
+      ];
+    }
+    if (lower.includes('salary') || lower.includes('employer')) {
+      return [
+        { id: 'ev1', title: 'Appointment Letter / Employment Contract', reason: 'Proves employment terms and agreed salary', priority: 'recommended' },
+        { id: 'ev2', title: 'Bank Statement / Pay Slips', reason: 'Proves non-payment of monthly salary', priority: 'recommended' },
+      ];
+    }
+    return [
+      { id: 'ev1', title: 'Supporting Document / Receipt / Photo', reason: 'Helps substantiate facts', priority: 'recommended' },
+      { id: 'ev2', title: 'Communication Records (Chat/Email)', reason: 'Shows attempts to resolve directly', priority: 'optional' },
+    ];
+  }
+
+  private fallbackSolutionGenerator(
+    userDescription: string,
+    understanding: CaseUnderstanding,
+    qAndA: QuestionAnswerPair[]
+  ): CivicSolution {
+    const text = userDescription.toLowerCase();
+    const title = understanding.caseTitle || this.deriveTitleFallback(userDescription);
+
+    let situationSummary = understanding.situationSummary || `Matter regarding: "${userDescription}"`;
+    let userGoal = 'Resolve matter and obtain appropriate remedy';
+    let whatCivicFlowFound = 'CivicFlow evaluated your case narrative and clarification answers.';
+    let rightsAndConsiderations: string[] = [];
+    let options = [];
+    let recommendedNextStep = { title: '', explanation: '' };
+    let actionPlan: ActionPlanStep[] = [];
+    let responsibleAuthority: ResponsibleAuthority | null = null;
+    let suggestedDocuments: SuggestedDocument[] = [];
+
+    if (text.includes('landlord') || text.includes('deposit') || text.includes('rent')) {
+      whatCivicFlowFound = 'Under Indian Tenancy Laws and Contract Law principles, security deposits are refundable upon tenancy completion unless legitimate physical damage deductions are proved by landlord.';
+      rightsAndConsiderations = [
+        'Landlords cannot withhold security deposit without itemized proof of damage.',
+        'Normal wear and tear cannot be deducted from deposit.',
+        'A formal legal demand notice gives 7-15 days to refund before court filing.'
+      ];
+      options = [
+        { title: 'Formal Written Demand Notice', description: 'Serve a formal demand letter citing payment receipts and 7-day refund deadline.', considerations: ['Creates binding written record for legal proceedings'] },
+        { title: 'Rent Control Court / Small Claims Grievance', description: 'Approach local Rent Authority or District Consumer Commission for refund recovery.', considerations: ['Statutory legal recovery route'] },
+      ];
+      recommendedNextStep = { title: 'Issue Formal Security Deposit Demand Notice', explanation: 'Sends an official written request giving landlord 7 days to repay before filing legal grievance.' };
+      actionPlan = [
+        { order: 1, title: 'Compile Rental Proof & Payment Receipts', description: 'Gather agreement copy, UPI payment statement, and communication logs.', status: 'completed' },
+        { order: 2, title: 'Send Formal Demand Letter to Landlord', description: 'Dispatch demand notice via Registered Post / Email giving 7 days deadline.', status: 'in_progress' },
+        { order: 3, title: 'Approach Rent Authority / Consumer Forum', description: 'If unpaid after 7 days, submit petition before Rent Control Authority.', status: 'not_started' },
+      ];
+      responsibleAuthority = {
+        name: 'District Rent Authority / Consumer Disputes Redressal Commission',
+        type: 'Statutory Judicial & Rent Tribunal',
+        relevance: 'Adjudicates landlord-tenant deposit recovery disputes.',
+        actionableInfo: 'Submit petition at District Rent Tribunal or e-Daakhil consumer portal.',
+        confidence: 'high',
+      };
+      suggestedDocuments = [
+        { id: 'doc_1', documentType: 'security_deposit_refund_demand', title: 'Security Deposit Refund Demand Notice', reason: 'Formal demand notice to landlord', recommended: true },
+      ];
+    } else if (text.includes('light') || text.includes('lamp') || text.includes('street')) {
+      whatCivicFlowFound = 'Urban Local Bodies (Municipal Corporations) have a statutory duty under State Municipal Acts to maintain public street lighting for community safety.';
+      rightsAndConsiderations = [
+        'Citizens have a right to functioning public street lighting maintained by municipal funds.',
+        'Municipalities must provide a complaint reference number upon reporting.'
+      ];
+      options = [
+        { title: 'Direct Municipal Ward Office Complaint', description: 'Submit complaint ticket with specific pole landmark to Municipal Electrical Division.', considerations: ['Generates official repair tracking ticket'] },
+        { title: 'State Public Grievance Escalation', description: 'Escalate to Municipal Commissioner or Chief Minister Grievance Portal.', considerations: ['Forces executive oversight on ward staff'] },
+      ];
+      recommendedNextStep = { title: 'Lodge Municipal Streetlight Repair Complaint', explanation: 'Creates an official repair ticket with local ward electrical staff.' };
+      actionPlan = [
+        { order: 1, title: 'Identify Pole Location & Ward Number', description: 'Note exact street landmark and municipal ward number.', status: 'completed' },
+        { order: 2, title: 'Submit Grievance to Municipal Electrical Engineer', description: 'Submit formal complaint letter to Municipal Corporation.', status: 'in_progress' },
+        { order: 3, title: 'Track Repair Action', description: 'Allow 3 to 5 working days for maintenance crew dispatch.', status: 'not_started' },
+      ];
+      responsibleAuthority = {
+        name: 'Local Municipal Corporation — Electrical Division',
+        type: 'Urban Local Body (Municipal Authority)',
+        relevance: 'Statutorily responsible for public street lighting maintenance.',
+        actionableInfo: 'Submit complaint at Ward Office or Municipal Citizen Portal.',
+        confidence: 'high',
+      };
+      suggestedDocuments = [
+        { id: 'doc_1', documentType: 'complaint', title: 'Municipal Street Light Repair Complaint Letter', reason: 'Formal complaint to Municipal Executive Engineer', recommended: true },
+      ];
+    } else {
+      whatCivicFlowFound = 'Based on the facts provided, you have a right to issue a formal written representation and seek administrative grievance redressal.';
+      rightsAndConsiderations = [
+        'Written representations create binding official records for administrative review.',
+        'Grievances submitted to nodal authorities require acknowledgment.'
+      ];
+      options = [
+        { title: 'Formal Administrative Representation', description: 'Submit an official written statement of facts requesting specific relief.', considerations: ['Establishes written notice for review'] },
+      ];
+      recommendedNextStep = { title: 'Submit Structured Representation', explanation: 'Creates formal documentation of your grievance.' };
+      actionPlan = [
+        { order: 1, title: 'Organize Case Timeline and Evidence', description: 'Compile dates, reference numbers, and facts.', status: 'in_progress' },
+        { order: 2, title: 'Deliver Written Representation to Nodal Office', description: 'Submit formal letter to responsible authority.', status: 'not_started' },
+      ];
+      responsibleAuthority = {
+        name: 'Nodal Public Authority / Service Provider',
+        type: 'Competent Authority',
+        relevance: 'Oversees service compliance and grievance resolution.',
+        actionableInfo: 'Submit directly to head of department or nodal officer.',
+        confidence: 'medium',
+      };
+      suggestedDocuments = [
+        { id: 'doc_1', documentType: 'representation', title: 'Formal Written Representation', reason: 'Official statement of facts and request for action', recommended: true },
+      ];
+    }
+
+    return {
+      caseTitle: title,
+      situationSummary,
+      userGoal,
+      whatCivicFlowFound,
+      explanation: whatCivicFlowFound,
+      rightsAndConsiderations,
+      options,
+      recommendedNextStep,
+      actionPlan,
+      responsibleAuthority,
+      sources: [
+        { id: 's1', title: 'Constitution of India & Statutory Rights Framework', url: 'https://india.gov.in', relevance: 'Governing statutory rights framework' },
+      ],
+      suggestedDocuments,
+      limitations: [
+        'CivicFlow provides civic navigation and legal information support. It does not replace professional legal representation.',
+      ],
+      confidence: 'high',
+    };
+  }
+
+  private fallbackDocumentGenerator(
     docType: string,
     caseTitle: string,
     userDescription: string,
@@ -663,63 +552,60 @@ export class CivicIntelligenceEngine {
     solution?: CivicSolution
   ): GeneratedDocument {
     const applicantName = (answers['applicant_name'] as string) || '[Your Full Name]';
-    const applicantAddress = (answers['applicant_address'] as string) || '[Your Full Address]';
-    const applicantPhone = (answers['applicant_phone'] as string) || '[Your Phone Number]';
     const location = (answers['location'] as string) || '[Locality / City]';
-    const authorityName = solution?.responsibleAuthority?.name || '[Target Institution / Authority / Person]';
-    const currentDate = new Date().toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    const authorityName = solution?.responsibleAuthority?.name || '[Target Authority / Person]';
+    const currentDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
     let title = 'Official Representation';
     let previewMarkdown = '';
+    const dynamicFields: DynamicField[] = [
+      { id: 'applicant_name', label: 'Your Full Name', value: applicantName, placeholder: 'Enter your full name', required: true, type: 'text' },
+      { id: 'applicant_address', label: 'Communication Address', value: (answers['applicant_address'] as string) || '', placeholder: 'Enter your full address', required: true, type: 'textarea' },
+      { id: 'applicant_phone', label: 'Contact Phone Number', value: (answers['applicant_phone'] as string) || '', placeholder: 'Enter contact phone number', required: true, type: 'text' },
+      { id: 'target_authority', label: 'Recipient / Opposing Party Name', value: authorityName, placeholder: 'Enter authority or recipient name', required: false, type: 'text' },
+    ];
+
     const fields: Record<string, string> = {
-      applicantName,
-      applicantAddress,
-      applicantPhone,
-      location,
-      authorityName,
+      applicant_name: applicantName,
+      applicant_address: (answers['applicant_address'] as string) || '[Your Postal Address]',
+      applicant_phone: (answers['applicant_phone'] as string) || '[Your Phone Number]',
+      target_authority: authorityName,
       date: currentDate,
     };
 
-    const textLower = userDescription.toLowerCase();
-
-    if (docType === 'refund_demand' || textLower.includes('tuition') || textLower.includes('tutor') || (textLower.includes('fee') && textLower.includes('refund'))) {
-      title = 'Demand Notice for Fee Refund';
-      previewMarkdown = `### DEMAND NOTICE FOR REFUND OF PAID FEES
+    if (docType === 'security_deposit_refund_demand' || userDescription.toLowerCase().includes('deposit') || userDescription.toLowerCase().includes('landlord')) {
+      title = 'Demand Notice for Security Deposit Refund';
+      previewMarkdown = `### DEMAND NOTICE FOR REFUND OF SECURITY DEPOSIT
 
 **Date:** ${currentDate}
 
 **To,**  
-The Tutor / Director,  
-${authorityName}  
+**${authorityName}**  
 ${location}
 
-**Subject:** Demand for immediate refund of paid fees — Regarding ${caseTitle}
+**Subject:** Demand for immediate refund of security deposit — Regarding ${caseTitle}
 
 **Sir / Madam,**
 
-I am writing to formally request the immediate refund of fees paid for tuition/educational services.
+I am writing to formally demand the immediate refund of my security deposit paid for the rented premises at ${location}.
 
-**1. Facts of Payment:**
+**1. Statement of Facts:**
 - Applicant Name: ${applicantName}
-- Fee Amount Paid / Dispute: As per transaction records
-- Issue Description: ${userDescription}
+- Issue Narrative: ${userDescription}
+- I have handed over vacant possession of the premises with no unpaid dues or physical damages beyond normal wear and tear.
 
-**2. Grounds for Refund:**
-The service was discontinued / not rendered as agreed. Withholding fee refund without valid justification constitutes service deficiency and unfair commercial practice.
+**2. Legal Obligation:**
+Under Indian contract and tenancy principles, withholding security deposit without itemized proof of damage constitutes illegal retention of funds.
 
 **3. Relief Demanded:**
-You are hereby requested to process and refund the balance fee amount to my bank account within **7 (seven) days** from receipt of this notice.
+You are hereby called upon to process and transfer the full security deposit amount to my bank account within **7 (seven) days** from receipt of this notice.
 
-Failing this, I shall be constrained to log a formal pre-litigation grievance on the National Consumer Helpline (NCH - 1915) and file a complaint before the Consumer Disputes Redressal Commission.
+Failing this, I shall be constrained to initiate appropriate legal proceedings before the Rent Tribunal / Consumer Disputes Redressal Commission at your cost and risk.
 
 Sincerely,  
 **${applicantName}**  
-Contact: ${applicantPhone}  
-Address: ${applicantAddress}`;
+Contact: ${fields.applicant_phone}  
+Address: ${fields.applicant_address}`;
     } else if (docType === 'rti') {
       title = 'Application under Right to Information Act, 2005';
       previewMarkdown = `### APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005
@@ -728,100 +614,173 @@ Address: ${applicantAddress}`;
 
 **To,**  
 The Public Information Officer (PIO),  
-${authorityName}  
+**${authorityName}**  
 ${location}
 
-**1. Name of Applicant:** ${applicantName}  
-**2. Address for Communication:** ${applicantAddress}  
-**3. Contact Number:** ${applicantPhone}  
+**1. APPLICANT DETAILS:**  
+- Name: ${applicantName}  
+- Address: ${fields.applicant_address}  
+- Contact: ${fields.applicant_phone}  
 
-**4. Particulars of Information Requested under RTI Act 2005:**  
-Subject: Information regarding works and expenditure in ${location}.
+**2. PARTICULARS OF INFORMATION REQUESTED:**  
+Subject: Information seeking public records regarding: ${caseTitle}
 
-Please provide certified copies of the following information/records:
-1. Copy of administrative sanction and total funds allocated for repair/maintenance works in ${location} for the current financial year.
-2. Itemized expenditure statement showing actual money spent to date.
-3. Copy of contract work order, tender agreement, and name of contractor awarded the work.
-4. Name and designation of the inspecting officer responsible for certifying quality.
-5. Copy of completion certificate if marked complete.
+Please provide certified copies of the following public records:
+1. Itemized expenditure statements and work order allocations regarding: "${userDescription}".
+2. Copy of inspection notes and completion certificates issued by responsible department officers.
+3. Name and designation of the officer responsible for overseeing this matter.
 
-**5. Period to which information relates:** Current financial year to date.  
-**6. Fee Details:** Application fee of Rs. 10/- attached herewith via IPO / Court Fee Stamp.
+**3. FEE DETAILS:**  
+RTI Application Fee of ₹10/- attached herewith via IPO / Court Fee Stamp.
 
 I confirm that I am a citizen of India.
 
 Sincerely,  
 **${applicantName}**`;
-    } else if (docType === 'complaint') {
+    } else {
       title = 'Formal Grievance Complaint';
-      previewMarkdown = `### FORMAL GRIEVANCE COMPLAINT REGARDING CIVIC DEFICIENCY
+      previewMarkdown = `### FORMAL GRIEVANCE COMPLAINT
 
 **Date:** ${currentDate}
 
 **To,**  
-The Executive Officer / Nodal Grievance Officer,  
-${authorityName}  
+**${authorityName}**  
 ${location}
 
-**Subject:** Complaint Regarding: ${caseTitle}
+**Subject:** Complaint regarding ${caseTitle}
 
 **Respected Sir / Madam,**
 
-I am writing to register an official complaint regarding civic/public service deficiency at ${location}.
+I am writing to lodge a formal complaint regarding civic/service deficiency at ${location}.
 
-**Statement of Facts:**
-1. ${userDescription}
-2. This issue causes inconvenience and safety concerns to local residents.
+**Details of Issue:**
+${userDescription}
 
 **Relief Requested:**
-1. Immediate site inspection by responsible officials.
-2. Immediate repair / resolution of the issue.
-3. Issuance of an official complaint reference ID for tracking.
+1. Immediate inspection and action by responsible officials.
+2. Resolution of the issue and issuance of a formal complaint tracking number.
 
 Yours faithfully,  
 **${applicantName}**  
-Contact: ${applicantPhone}  
-Address: ${applicantAddress}`;
-    } else {
-      title = 'Formal Administrative Representation';
-      previewMarkdown = `### FORMAL WRITTEN REPRESENTATION
-
-**Date:** ${currentDate}
-
-**To,**  
-${authorityName}  
-${location}
-
-**Subject:** Matter regarding ${caseTitle}
-
-**Sir / Madam,**
-
-I submit the following representation for your urgent attention:
-
-**Statement of Problem:**  
-${userDescription}
-
-**Requested Action:**  
-I request your office to review the above facts and take appropriate action to resolve this matter at the earliest.
-
-Thanking you.
-
-Sincerely,  
-**${applicantName}**  
-Address: ${applicantAddress}  
-Phone: ${applicantPhone}`;
+Contact: ${fields.applicant_phone}  
+Address: ${fields.applicant_address}`;
     }
 
     return {
       id: `doc_${Date.now()}`,
-      caseId: 'current',
+      caseId: 'case_active',
       documentType: docType,
       title,
       fields,
+      dynamicFields,
       previewMarkdown,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  private compileLocalCaseFile(c: CivicCase): string {
+    const dateStr = new Date(c.createdAt).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    return `
+# CIVICFLOW AI — OFFICIAL CASE FILE
+
+---
+
+## 1. CASE METADATA
+- **Case ID:** \`${c.id}\`
+- **Case Title:** ${c.title}
+- **Date Created:** ${dateStr}
+- **Current Status:** ${c.status.toUpperCase()}
+- **Analysis Confidence:** ${c.confidence.toUpperCase()}
+
+---
+
+## 2. ORIGINAL CITIZEN STATEMENT
+> "${c.originalProblem}"
+
+---
+
+## 3. AI CASE UNDERSTANDING & CONFIRMED FACTS
+- **Summary:** ${c.understanding?.situationSummary || c.currentSummary}
+- **Confirmed Facts:**
+${(c.understanding?.confirmedFacts || []).map(f => `  - [✓] ${f.fact} (${f.source})`).join('\n')}
+
+---
+
+## 4. SEQUENTIAL CLARIFICATION Q&A (EXACTLY 3 QUESTIONS)
+${(c.qAndA || []).map(qa => `
+### Question ${qa.questionNumber}: ${qa.question.question}
+- **Why it matters:** ${qa.question.reason}
+- **Citizen Answer:** **${Array.isArray(qa.answer) ? qa.answer.join(', ') : qa.answer}**
+`).join('\n')}
+
+---
+
+## 5. EVIDENCE ANALYSIS
+${c.uploadedEvidence && c.uploadedEvidence.length > 0
+  ? c.uploadedEvidence.map(ev => `- 📄 **${ev.title}:** ${ev.reason} (${ev.fileMetadata?.name || 'File Uploaded'})`).join('\n')
+  : c.evidenceSkipped ? '_Citizen proceeded without uploading physical evidence._' : '_No physical evidence attached._'}
+
+---
+
+## 6. CITIZEN OBJECTIVE & CIVIC ANALYSIS
+- **User Objective:** ${c.solution?.userGoal || c.understanding?.likelyGoal || 'Resolve matter'}
+- **CivicFlow Findings:** ${c.solution?.whatCivicFlowFound || c.solution?.explanation || 'Analyzed under legal framework'}
+
+### Rights & Key Considerations:
+${(c.solution?.rightsAndConsiderations || []).map(r => `- ⚖️ ${r}`).join('\n')}
+
+---
+
+## 7. AVAILABLE OPTIONS & RECOMMENDED NEXT STEP
+### ⭐ Recommended Next Step:
+**${c.solution?.recommendedNextStep?.title || 'Take action'}**  
+_${c.solution?.recommendedNextStep?.explanation || ''}_
+
+### All Practical Options:
+${(c.solution?.options || []).map(opt => `
+- **${opt.title}:** ${opt.description}
+  ${opt.considerations ? opt.considerations.map(c => `  - Key Consideration: ${c}`).join('\n') : ''}
+`).join('\n')}
+
+---
+
+## 8. DYNAMIC ACTION PLAN
+${(c.solution?.actionPlan || []).map(step => `
+**Step ${step.order}: ${step.title}** [Status: ${step.status.toUpperCase()}]
+- ${step.description}
+- _Why it matters:_ ${step.whyItMatters || 'Essential step'}
+${step.evidenceNeeded && step.evidenceNeeded.length > 0 ? `- Required Items: ${step.evidenceNeeded.join(', ')}` : ''}
+`).join('\n')}
+
+---
+
+## 9. RESPONSIBLE AUTHORITY
+- **Authority Name:** ${c.solution?.responsibleAuthority?.name || 'Requires local verification'}
+- **Type:** ${c.solution?.responsibleAuthority?.type || 'Public / Private Entity'}
+- **Relevance:** ${c.solution?.responsibleAuthority?.relevance || ''}
+- **Actionable Info:** ${c.solution?.responsibleAuthority?.actionableInfo || ''}
+${c.solution?.responsibleAuthority?.officialLink ? `- **Official Link:** ${c.solution.responsibleAuthority.officialLink}` : ''}
+
+---
+
+## 10. SUGGESTED DOCUMENTS & SOURCES
+### Suggested Documents:
+${(c.solution?.suggestedDocuments || []).map(doc => `- 📝 **${doc.title}:** ${doc.reason}`).join('\n')}
+
+### Authoritative Sources:
+${(c.solution?.sources || []).map(src => `- 🔗 [${src.title}](${src.url}) — ${src.relevance}`).join('\n')}
+
+---
+
+## OFFICIAL SAFETY DISCLAIMER
+> CivicFlow AI provides civic and legal information and navigation support. It does not replace advice or representation from a qualified legal professional.
+`.trim();
   }
 }
 

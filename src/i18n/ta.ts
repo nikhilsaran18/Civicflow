@@ -85,8 +85,22 @@ export const ta = {
   bureaucraticText: 'அரசு / சட்ட மொழி உரை',
   simpleExplanation: 'எளிய விளக்கம்',
 
-  // Safety Disclaimer
-  safetyDisclaimer: 'சிவிக்ஃபுளோ குடிமை மற்றும் சட்ட தகவல்களை வழங்குகிறது. இது அதிகாரப்பூர்வ வழக்கறிஞர் ஆலோசனையை மாற்றாது.',
+  // RTI Builder
+  rti: {
+    title: 'தகவல் அறியும் உரிமை (RTI) மனு உருவாக்கி',
+    subtitle: 'RTI சட்டம் 2005 பிரிவு 6(1) இன் கீழ் எந்தவொரு அரசு துறைக்கும் முறைப்படியான RTI மனுவை உருவாக்குங்கள்.',
+    applicantName: 'விண்ணப்பதாரர் முழு பெயர்',
+    applicantAddress: 'தபால் முகவரி',
+    publicAuthority: 'அரசு துறை / அதிகாரம்',
+    department: 'பிரிவு / அலுவலகம்',
+    informationRequested: 'கேட்கப்படும் தகவல்கள்',
+    periodYears: 'தகவல் சார்ந்த காலம்',
+    format: 'விருப்ப வடிவமைப்பு',
+    previewTitle: 'நேரலை RTI மனு வரைவு',
+    copy: 'நகலெடு',
+    print: 'அச்சிடு',
+    copiedToast: 'RTI வரைவு நகலெடுக்கப்பட்டது!',
+  },
 
   // General
   loading: 'சூழ்நிலை பகுப்பாய்வு செய்யப்படுகிறது...',

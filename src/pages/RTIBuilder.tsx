@@ -1,25 +1,51 @@
-import React, { useState } from 'react';
-import { Copy, Printer, Check, FileText, Sparkles, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Copy, Printer, FileText, Download, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { Toast } from '../components/common/Toast';
+import { CivicCase } from '../types/civicIntelligence';
 
 export const RTIBuilder: React.FC = () => {
   const { t } = useLanguage();
+  const location = useLocation();
 
-  const [applicantName, setApplicantName] = useState('Arun Kumar');
-  const [address, setAddress] = useState('123 Gandhi Road, Ward 14, Chennai - 600001');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [authority, setPublicAuthority] = useState('Greater Chennai Corporation');
-  const [department, setDepartment] = useState('Public Works & Electrical Division');
-  const [infoRequested, setInfoRequested] = useState(
-    'Certified copies of tender allocation documents, contractor completion timelines, and total funds sanctioned for streetlight maintenance in Ward 14.'
-  );
-  const [period, setPeriod] = useState('Jan 2024 to Dec 2024');
+  const caseData: CivicCase | undefined = (location.state as any)?.caseData;
+
+  const [applicantName, setApplicantName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [authority, setPublicAuthority] = useState('');
+  const [department, setDepartment] = useState('');
+  const [infoRequested, setInfoRequested] = useState('');
+  const [period, setPeriod] = useState('Current Financial Year (2024 - 2025)');
   const [isBPL, setIsBPL] = useState(false);
   const [bplCardNo, setBplCardNo] = useState('');
   const [format, setFormat] = useState<'Inspection' | 'Hard Copies' | 'Digital / Email'>('Hard Copies');
 
   const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (caseData) {
+      if (caseData.answers?.applicant_name) setApplicantName(String(caseData.answers.applicant_name));
+      if (caseData.answers?.location) setAddress(String(caseData.answers.location));
+      if (caseData.solution?.responsibleAuthority?.name) {
+        setPublicAuthority(caseData.solution.responsibleAuthority.name);
+      }
+      setInfoRequested(
+        `1. Certified copies of official records, file notings, work orders, and expenditure statements regarding: "${caseData.originalProblem}".\n2. Name and designation of the inspecting officer responsible for this matter.`
+      );
+    } else {
+      // Demo defaults
+      setApplicantName('Arun Kumar');
+      setAddress('123 Gandhi Road, Ward 14, Chennai - 600001');
+      setPhone('+91 98765 43210');
+      setPublicAuthority('Greater Chennai Corporation');
+      setDepartment('Public Works & Electrical Division');
+      setInfoRequested(
+        'Certified copies of tender allocation documents, contractor completion timelines, and total funds sanctioned for streetlight maintenance in Ward 14.'
+      );
+    }
+  }, [caseData]);
 
   const generatedDraftText = `
 BEFORE THE PUBLIC INFORMATION OFFICER (PIO)
@@ -27,19 +53,19 @@ Under Section 6(1) of the Right to Information Act, 2005
 
 To,
 The Central Public Information Officer (CPIO),
-${authority.toUpperCase()}
-Department / Division: ${department}
+${authority ? authority.toUpperCase() : '[PUBLIC AUTHORITY NAME]'}
+Department / Division: ${department || '[DEPARTMENT / DIVISION]'}
 
 1. APPLICANT DETAILS:
-   Full Name: ${applicantName}
-   Postal Address: ${address}
-   Contact Number: ${phone}
+   Full Name: ${applicantName || '[APPLICANT FULL NAME]'}
+   Postal Address: ${address || '[POSTAL ADDRESS]'}
+   Contact Number: ${phone || '[CONTACT NUMBER]'}
 
-2. PARTICULAR OF INFORMATION REQUESTED:
+2. PARTICULARS OF INFORMATION REQUESTED:
    Subject: Application under Section 6(1) of RTI Act 2005 seeking certified public records.
    
    Specific Details Requested:
-   ${infoRequested}
+   ${infoRequested || '[SPECIFIC INFORMATION REQUESTED]'}
 
    Period to which information pertains: ${period}
 
@@ -53,13 +79,13 @@ Department / Division: ${department}
    }
 
 5. DECLARATION:
-   I state that the information sought does not fall under the exemptions contained in Section 8 & 9 of the RTI Act 2005 and pertains to public authority duties.
+   I state that the information sought does not fall under the exemptions contained in Section 8 & 9 of the RTI Act 2005 and pertains to public authority duties. I am a citizen of India.
 
 Place: ____________________
 Date: ${new Date().toLocaleDateString('en-IN')}
 
 ___________________________
-Signature of Applicant (${applicantName})
+Signature of Applicant (${applicantName || 'Applicant'})
   `.trim();
 
   const handleCopy = () => {
@@ -71,12 +97,22 @@ Signature of Applicant (${applicantName})
     window.print();
   };
 
+  const handleDownloadTxt = () => {
+    const element = document.createElement('a');
+    const file = new Blob([generatedDraftText], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `RTI_Application_${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 px-4 py-6">
       {/* Toast */}
       {showToast && (
         <Toast
-          message={t.rti.copiedToast}
+          message={t('rti.copiedToast')}
           type="success"
           onClose={() => setShowToast(false)}
         />
@@ -88,8 +124,8 @@ Signature of Applicant (${applicantName})
           <FileText className="w-4 h-4" />
           <span>Structured RTI Application Generator</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t.rti.title}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{t.rti.subtitle}</p>
+        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t('rti.title')}</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{t('rti.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
@@ -99,24 +135,26 @@ Signature of Applicant (${applicantName})
 
           <div>
             <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-              {t.rti.applicantName}
+              {t('rti.applicantName')}
             </label>
             <input
               type="text"
               value={applicantName}
               onChange={e => setApplicantName(e.target.value)}
+              placeholder="e.g. Arun Kumar"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-              {t.rti.applicantAddress}
+              {t('rti.applicantAddress')}
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={address}
               onChange={e => setAddress(e.target.value)}
+              placeholder="Full postal address for reply"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
             />
           </div>
@@ -124,23 +162,25 @@ Signature of Applicant (${applicantName})
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                {t.rti.publicAuthority}
+                {t('rti.publicAuthority')}
               </label>
               <input
                 type="text"
                 value={authority}
                 onChange={e => setPublicAuthority(e.target.value)}
+                placeholder="e.g. Municipal Corporation"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
               />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                {t.rti.department}
+                {t('rti.department')}
               </label>
               <input
                 type="text"
                 value={department}
                 onChange={e => setDepartment(e.target.value)}
+                placeholder="e.g. Electrical Division"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
               />
             </div>
@@ -148,12 +188,13 @@ Signature of Applicant (${applicantName})
 
           <div>
             <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-              {t.rti.informationRequested}
+              {t('rti.informationRequested')}
             </label>
             <textarea
-              rows={3}
+              rows={4}
               value={infoRequested}
               onChange={e => setInfoRequested(e.target.value)}
+              placeholder="Specify the exact public records or information needed"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
             />
           </div>
@@ -161,7 +202,7 @@ Signature of Applicant (${applicantName})
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                {t.rti.periodYears}
+                {t('rti.periodYears')}
               </label>
               <input
                 type="text"
@@ -172,7 +213,7 @@ Signature of Applicant (${applicantName})
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                {t.rti.format}
+                {t('rti.format')}
               </label>
               <select
                 value={format}
@@ -192,7 +233,7 @@ Signature of Applicant (${applicantName})
               id="bpl"
               checked={isBPL}
               onChange={e => setIsBPL(e.target.checked)}
-              className="rounded text-brand-600"
+              className="rounded text-indigo-600"
             />
             <label htmlFor="bpl" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Claim Below Poverty Line (BPL) Fee Waiver
@@ -220,7 +261,7 @@ Signature of Applicant (${applicantName})
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 print:hidden">
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                {t.rti.previewTitle}
+                {t('rti.previewTitle')}
               </span>
               <div className="flex items-center space-x-2">
                 <button
@@ -228,14 +269,21 @@ Signature of Applicant (${applicantName})
                   className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center space-x-1 border border-slate-700"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span>{t.rti.copy}</span>
+                  <span>{t('rti.copy')}</span>
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white flex items-center space-x-1 shadow-sm"
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center space-x-1 shadow-sm"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  <span>{t.rti.print}</span>
+                  <span>{t('rti.print')}</span>
+                </button>
+                <button
+                  onClick={handleDownloadTxt}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center space-x-1 border border-slate-700"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Text</span>
                 </button>
               </div>
             </div>
@@ -253,3 +301,4 @@ Signature of Applicant (${applicantName})
     </div>
   );
 };
+

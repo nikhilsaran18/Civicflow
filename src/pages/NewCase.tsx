@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Send, CheckCircle, HelpCircle, Shield, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { Sparkles, Send, CheckCircle, HelpCircle, Shield, ArrowRight, RefreshCw, Upload, FileCheck, FileX } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { defaultCivicIntelligenceEngine } from '../services/ai/civicIntelligenceEngine';
-import { CaseUnderstanding, ClarificationQuestion, CivicCase } from '../types/civicIntelligence';
+import { CaseUnderstanding, ClarificationQuestion, CivicCase, EvidenceItem, QuestionAnswerPair, ConfirmedFact } from '../types/civicIntelligence';
 import { CaseStorageService } from '../services/caseStorageService';
 
 export const NewCase: React.FC = () => {
@@ -11,160 +11,252 @@ export const NewCase: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Strict Unique Case Isolation
+  // Unique Case ID
   const [currentCaseId] = useState(() => `case_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
 
-  // Initial prompt from state or default
+  // Initial prompt from location state
   const initialText = (location.state as any)?.initialProblem || '';
 
   const [problemText, setProblemText] = useState(initialText);
   const [hasStarted, setHasStarted] = useState(Boolean(initialText.trim()));
 
+  // Dynamic Flow State
+  const [stage, setStage] = useState<'input' | 'questions' | 'evidence' | 'analyzing' | 'done'>('input');
   const [understanding, setUnderstanding] = useState<CaseUnderstanding | null>(null);
-  const [questions, setQuestions] = useState<ClarificationQuestion[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  const [userAnswers, setUserAnswers] = useState<Record<string, string | string[]>>({});
+  // Sequential 3 Questions State
+  const [questionNumber, setQuestionNumber] = useState<number>(1);
+  const [currentQuestion, setCurrentQuestion] = useState<ClarificationQuestion | null>(null);
+  const [qAndAHistory, setQAndAHistory] = useState<QuestionAnswerPair[]>([]);
   const [currentAnswerInput, setCurrentAnswerInput] = useState<string | string[]>('');
+  const [userAnswersRecord, setUserAnswersRecord] = useState<Record<string, string | string[]>>({});
 
+  // Evidence Stage State
+  const [recommendedEvidence, setRecommendedEvidence] = useState<EvidenceItem[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ id: string; name: string; size: number; notes: string }[]>([]);
+  const [fileNotesInput, setFileNotesInput] = useState('');
+
+  // Status & Loading State
   const [loading, setLoading] = useState(false);
   const [thinkingState, setThinkingState] = useState('');
-  const [generatingSolution, setGeneratingSolution] = useState(false);
 
-  // Initialize or re-analyze case when initialText is supplied
+  // Initialize if initialText is provided
   useEffect(() => {
     if (initialText.trim()) {
-      runInitialAnalysis(initialText);
+      startAnalysisWorkflow(initialText);
     }
   }, [initialText]);
 
-  const runInitialAnalysis = async (text: string) => {
+  const startAnalysisWorkflow = async (text: string) => {
     if (!text.trim()) return;
     setLoading(true);
-    setThinkingState('Understanding your situation...');
     setHasStarted(true);
+    setThinkingState('Analyzing situation & extracting confirmed facts...');
 
     try {
-      setTimeout(() => setThinkingState('Checking missing information...'), 400);
-      setTimeout(() => setThinkingState('Validating question relevance...'), 800);
+      // 1. Initial AI Understanding
+      const initialUnderstanding = await defaultCivicIntelligenceEngine.understandCase(text);
+      setUnderstanding(initialUnderstanding);
 
-      const res = await defaultCivicIntelligenceEngine.analyzeCase(text, userAnswers);
-      setUnderstanding(res.understanding);
-      setQuestions(res.questions);
-      setCurrentQuestionIndex(0);
+      // 2. Fetch Question #1
+      setThinkingState('Generating dynamic Question #1 of 3...');
+      const q1 = await defaultCivicIntelligenceEngine.generateNextQuestion(
+        text,
+        initialUnderstanding.confirmedFacts,
+        [],
+        1
+      );
+
+      setStage('questions');
+      setQuestionNumber(1);
+      setCurrentQuestion(q1);
     } catch (err) {
-      console.error('Error analyzing case:', err);
+      console.error('Error starting case analysis:', err);
     } finally {
       setLoading(false);
       setThinkingState('');
     }
-  };
-
-  const handleStartFromInput = () => {
-    if (!problemText.trim()) return;
-    runInitialAnalysis(problemText);
   };
 
   const handleAnswerSubmit = async () => {
-    const currentQ = questions[currentQuestionIndex];
-    if (!currentQ) return;
+    if (!currentQuestion || !understanding) return;
 
-    const updatedAnswers = {
-      ...userAnswers,
-      [currentQ.id]: currentAnswerInput,
+    const answerVal = currentAnswerInput;
+    const answerStr = Array.isArray(answerVal) ? answerVal.join(', ') : answerVal;
+
+    // Record Q&A pair
+    const qaPair: QuestionAnswerPair = {
+      questionNumber,
+      question: currentQuestion,
+      answer: answerVal,
     };
-    setUserAnswers(updatedAnswers);
+    const updatedQA = [...qAndAHistory, qaPair];
+    setQAndAHistory(updatedQA);
+
+    // Update confirmed facts
+    const newFact: ConfirmedFact = {
+      id: `ans_${questionNumber}`,
+      fact: `${currentQuestion.question}: ${answerStr}`,
+      source: 'clarification_answer',
+    };
+    const updatedFacts = [...understanding.confirmedFacts, newFact];
+    const updatedUnderstanding = { ...understanding, confirmedFacts: updatedFacts };
+    setUnderstanding(updatedUnderstanding);
+
+    const updatedAnswers = { ...userAnswersRecord, [currentQuestion.id]: answerVal };
+    setUserAnswersRecord(updatedAnswers);
     setCurrentAnswerInput('');
 
+    // If Question 1 or 2 -> Generate next sequential question
+    if (questionNumber < 3) {
+      const nextQNum = questionNumber + 1;
+      setLoading(true);
+      setThinkingState(`Re-evaluating case facts & generating Question #${nextQNum} of 3...`);
+
+      try {
+        const nextQ = await defaultCivicIntelligenceEngine.generateNextQuestion(
+          problemText,
+          updatedFacts,
+          updatedQA,
+          nextQNum
+        );
+        setQuestionNumber(nextQNum);
+        setCurrentQuestion(nextQ);
+      } catch (err) {
+        console.error('Error fetching next question:', err);
+      } finally {
+        setLoading(false);
+        setThinkingState('');
+      }
+    } else {
+      // Question 3 Answered -> Move to Evidence Stage!
+      setLoading(true);
+      setThinkingState('Evaluating case facts & determining recommended evidence...');
+
+      try {
+        const evidenceItems = await defaultCivicIntelligenceEngine.recommendEvidence(
+          problemText,
+          updatedFacts,
+          updatedQA
+        );
+        setRecommendedEvidence(evidenceItems);
+        setStage('evidence');
+      } catch (err) {
+        console.error('Error recommending evidence:', err);
+        setStage('evidence');
+      } finally {
+        setLoading(false);
+        setThinkingState('');
+      }
+    }
+  };
+
+  const handleSimulateFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const newFileObj = {
+      id: `file_${Date.now()}`,
+      name: file.name,
+      size: file.size,
+      notes: fileNotesInput || 'Uploaded document evidence',
+    };
+    setUploadedFiles(prev => [...prev, newFileObj]);
+    setFileNotesInput('');
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleFinalizeSolution = async (skipEvidence: boolean = false) => {
+    if (!understanding) return;
+    setStage('analyzing');
     setLoading(true);
-    setThinkingState('Updating case understanding...');
+    setThinkingState('Building complete case analysis & dynamic action plan...');
 
     try {
-      const res = await defaultCivicIntelligenceEngine.analyzeCase(problemText, updatedAnswers);
-      setUnderstanding(res.understanding);
-      setQuestions(res.questions);
+      const evidenceFacts: ConfirmedFact[] = uploadedFiles.map(f => ({
+        id: f.id,
+        fact: `Document Evidence: ${f.name} (${f.notes})`,
+        source: 'evidence_file',
+      }));
 
-      if (res.questions.length > 0 && currentQuestionIndex < res.questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
-      } else {
-        setCurrentQuestionIndex(0);
-      }
+      const fullSolution = await defaultCivicIntelligenceEngine.generateSolution(
+        problemText,
+        understanding,
+        qAndAHistory,
+        evidenceFacts
+      );
+
+      const finalCase: CivicCase = {
+        id: currentCaseId,
+        title: fullSolution.caseTitle || understanding.caseTitle || 'Civic Matter',
+        originalProblem: problemText,
+        currentSummary: fullSolution.situationSummary || understanding.situationSummary,
+        confidence: fullSolution.confidence || 'high',
+        status: 'action_required',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        understanding,
+        qAndA: qAndAHistory,
+        recommendedEvidence,
+        uploadedEvidence: uploadedFiles.map(f => ({
+          id: f.id,
+          title: f.name,
+          reason: f.notes,
+          priority: 'recommended',
+          fileMetadata: { name: f.name, size: f.size, type: 'document', uploadedAt: new Date().toISOString() },
+        })),
+        evidenceSkipped: skipEvidence,
+        solution: fullSolution,
+        answers: userAnswersRecord,
+      };
+
+      // Compile case file
+      const caseFileMd = await defaultCivicIntelligenceEngine.generateCaseFile(finalCase);
+      finalCase.caseFileMarkdown = caseFileMd;
+
+      // Save to case storage
+      CaseStorageService.saveCase(finalCase);
+
+      // Navigate to Case Detail workspace
+      navigate(`/case/${finalCase.id}`, { state: { caseData: finalCase } });
     } catch (err) {
-      console.error('Error submitting answer:', err);
+      console.error('Error generating solution:', err);
     } finally {
       setLoading(false);
       setThinkingState('');
     }
   };
 
-  const handleGenerateSolution = async () => {
-    if (!understanding) return;
-    setGeneratingSolution(true);
-    setThinkingState('Preparing your action plan & solution...');
-
-    try {
-      const solution = await defaultCivicIntelligenceEngine.generateSolution(
-        problemText,
-        understanding,
-        userAnswers
-      );
-
-      const newCase: CivicCase = {
-        id: currentCaseId,
-        title: understanding.aiCaseDescription || 'Civic Matter',
-        originalProblem: problemText,
-        currentSummary: understanding.situationSummary || understanding.summary || problemText,
-        desiredOutcome: understanding.desiredOutcome,
-        aiCaseDescription: understanding.aiCaseDescription,
-        confidence: understanding.confidence,
-        status: 'action_required',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [],
-        understanding,
-        solution,
-        answers: userAnswers,
-      };
-
-      CaseStorageService.saveCase(newCase);
-      navigate(`/case/${newCase.id}`, { state: { caseData: newCase } });
-    } catch (err) {
-      console.error('Error generating solution:', err);
-    } finally {
-      setGeneratingSolution(false);
-      setThinkingState('');
-    }
-  };
-
-  const currentQ = questions[currentQuestionIndex];
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header */}
+      {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-            {t('navNewCase')} Workspace (Case ID: {currentCaseId.slice(0, 12)})
+            CivicFlow Case Engine (ID: {currentCaseId.slice(0, 12)})
           </span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Tell us what happened
           </h1>
         </div>
         {understanding && (
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-            <span>AI Case Engine Active</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
+            <Sparkles className="w-4 h-4 text-teal-600" />
+            <span>Universal AI Case Engine Active</span>
           </div>
         )}
       </div>
 
-      {!hasStarted ? (
-        /* Initial Input Card */
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl border border-slate-200 shadow-md space-y-6">
+      {stage === 'input' && !hasStarted ? (
+        /* STEP 1: Describe Problem Card */
+        <div className="max-w-3xl mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-md space-y-6">
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-900">Describe your civic or legal issue</h2>
             <p className="text-sm text-slate-600">
-              No need to know legal departments, laws, or forms. Simply write what happened in your own words.
+              Tell us what happened in plain language. CivicFlow AI will understand your problem and ask 3 dynamic clarification questions.
             </p>
           </div>
 
@@ -172,95 +264,118 @@ export const NewCase: React.FC = () => {
             value={problemText}
             onChange={e => setProblemText(e.target.value)}
             rows={5}
-            placeholder="e.g. My tuition teacher is not refunding my fees..."
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900"
+            placeholder="e.g. My landlord is refusing to return my security deposit even though I moved out two weeks ago with no damage..."
+            className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 leading-relaxed"
           />
 
           <div className="flex justify-end">
             <button
-              onClick={handleStartFromInput}
+              onClick={() => startAnalysisWorkflow(problemText)}
               disabled={!problemText.trim() || loading}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span>Analyze Problem</span>
+              <span>Analyze Situation</span>
             </button>
           </div>
         </div>
       ) : (
-        /* Main Interactive Layout: LEFT Workspace + RIGHT Case Understanding Sidebar */
+        /* WORKSPACE INTERACTIVE GRID: LEFT WORKSPACE + RIGHT CASE UNDERSTANDING */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT: Conversation & Clarification Questions */}
+          {/* LEFT 2 COLUMNS: Sequential Questions / Evidence Stage / Thinking state */}
           <div className="lg:col-span-2 space-y-6">
-            {/* User Narrative Card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            {/* Citizen Original Statement */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Original Statement
                 </span>
-                <span className="text-xs font-medium text-slate-500">Confirmed Fact</span>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  ✓ Confirmed Fact
+                </span>
               </div>
-              <p className="text-sm font-medium text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200/80 leading-relaxed">
+              <p className="text-sm font-medium text-slate-800 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 leading-relaxed">
                 "{problemText}"
               </p>
             </div>
 
-            {/* AI Thinking State Notice */}
-            {thinkingState && (
-              <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 p-4 rounded-xl flex items-center gap-3 animate-pulse">
-                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 flex-shrink-0" />
-                <span className="text-xs font-semibold">{thinkingState}</span>
+            {/* Previous Q&A History Log */}
+            {qAndAHistory.length > 0 && (
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Clarification Record ({qAndAHistory.length} of 3 Completed)
+                </span>
+                <div className="space-y-3">
+                  {qAndAHistory.map(item => (
+                    <div key={item.questionNumber} className="bg-white p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 shadow-xs">
+                      <div className="font-bold text-indigo-700">
+                        Q{item.questionNumber}: {item.question.question}
+                      </div>
+                      <div className="text-slate-800 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 font-medium">
+                        Answer: <span className="font-bold">{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Dynamic Question Card */}
-            {currentQ && !understanding?.readyForSolution ? (
-              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-md space-y-5 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-teal-400" />
+            {/* AI Thinking State Notice */}
+            {thinkingState && (
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-2xl flex items-center gap-3 animate-pulse shadow-sm">
+                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 flex-shrink-0" />
+                <span className="text-xs font-bold">{thinkingState}</span>
+              </div>
+            )}
+
+            {/* STAGE 2, 3, 4: SEQUENTIAL CLARIFICATION QUESTION CARD */}
+            {stage === 'questions' && currentQuestion && (
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-indigo-100 shadow-lg space-y-5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-600 via-teal-500 to-indigo-600" />
                 
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                      {t('askingNextQuestion')} (Question {currentQuestionIndex + 1} of {questions.length})
-                    </span>
-                    <h3 className="text-base font-bold text-slate-900 leading-snug">
-                      {currentQ.question}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-extrabold border border-indigo-200">
+                      <span>Clarification Question #{questionNumber} of 3</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 leading-snug pt-1">
+                      {currentQuestion.question}
                     </h3>
                   </div>
-                  <HelpCircle className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-1" />
+                  <HelpCircle className="w-6 h-6 text-indigo-400 flex-shrink-0 mt-1" />
                 </div>
 
-                <p className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  💡 <span className="font-semibold">Why this matters:</span> {currentQ.reason}
+                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/80 leading-relaxed">
+                  💡 <span className="font-bold">Why this matters:</span> {currentQuestion.reason}
                 </p>
 
-                {/* Input render based on question type */}
+                {/* Input Render based on Question Type */}
                 <div className="space-y-3 pt-2">
-                  {currentQ.type === 'single_select' && currentQ.options ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {currentQ.options.map((opt, i) => (
+                  {currentQuestion.type === 'single_select' && currentQuestion.options ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {currentQuestion.options.map((opt, idx) => (
                         <button
-                          key={i}
+                          key={idx}
                           onClick={() => setCurrentAnswerInput(opt)}
-                          className={`p-3 rounded-xl text-xs font-semibold text-left transition-all border ${
+                          className={`p-3.5 rounded-2xl text-xs font-semibold text-left transition-all border ${
                             currentAnswerInput === opt
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50'
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50 hover:border-indigo-200'
                           }`}
                         >
                           {opt}
                         </button>
                       ))}
                     </div>
-                  ) : currentQ.type === 'yes_no' ? (
+                  ) : currentQuestion.type === 'yes_no' ? (
                     <div className="flex gap-4">
                       {['Yes', 'No'].map(val => (
                         <button
                           key={val}
                           onClick={() => setCurrentAnswerInput(val)}
-                          className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all border ${
+                          className={`flex-1 py-3.5 rounded-2xl text-xs font-bold transition-all border ${
                             currentAnswerInput === val
-                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
                               : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50'
                           }`}
                         >
@@ -274,62 +389,137 @@ export const NewCase: React.FC = () => {
                       onChange={e => setCurrentAnswerInput(e.target.value)}
                       rows={3}
                       placeholder="Type your answer here..."
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                  <span className="text-xs text-slate-400">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <span className="text-xs text-slate-400 font-medium">
                     Question Validator Pass Checked ✓
                   </span>
 
                   <button
                     onClick={handleAnswerSubmit}
                     disabled={!currentAnswerInput || loading}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    <span>{t('submitAnswer')}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Submit Answer & Continue</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            ) : (
-              /* Ready for Solution Card */
-              <div className="bg-emerald-50/80 border border-emerald-200 p-6 rounded-2xl space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                  <CheckCircle className="w-5 h-5 text-emerald-600" />
-                  <span>{t('readyNotice')}</span>
+            )}
+
+            {/* STAGE 5: DYNAMIC EVIDENCE RECOMMENDATION STAGE */}
+            {stage === 'evidence' && (
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-teal-200 shadow-lg space-y-6">
+                <div className="space-y-2 border-b border-slate-100 pb-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-extrabold border border-teal-200">
+                    <FileCheck className="w-4 h-4 text-teal-600" />
+                    <span>Evidence Recommendation Stage</span>
+                  </div>
+                  <h2 className="text-xl font-extrabold text-slate-900">
+                    Recommended evidence for this case
+                  </h2>
+                  <p className="text-xs text-slate-600">
+                    Gemini has evaluated your problem and clarification answers. Uploading any relevant items will strengthen your case file, or you may proceed directly.
+                  </p>
                 </div>
-                <p className="text-xs text-emerald-900 leading-relaxed">
-                  CivicFlow AI has gathered sufficient information to determine your rights, responsible authority, and practical step-by-step action plan.
-                </p>
-                <button
-                  onClick={handleGenerateSolution}
-                  disabled={generatingSolution}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
-                >
-                  {generatingSolution ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
+
+                {/* Evidence Checklist */}
+                {recommendedEvidence.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Suggested Items for Your Situation
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {recommendedEvidence.map(ev => (
+                        <div key={ev.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
+                          <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                            <span>📄</span>
+                            <span>{ev.title}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600">{ev.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* File Upload Box */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                  <span className="text-xs font-bold text-slate-700 block">
+                    Attach File or Add Evidence Detail
+                  </span>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={fileNotesInput}
+                      onChange={e => setFileNotesInput(e.target.value)}
+                      placeholder="e.g. Tenancy agreement copy / Fee receipt number"
+                      className="flex-1 bg-white border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+
+                    <label className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Select File</span>
+                      <input type="file" onChange={handleSimulateFileUpload} className="hidden" />
+                    </label>
+                  </div>
+
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase">Attached Evidence Files:</span>
+                      {uploadedFiles.map(f => (
+                        <div key={f.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-teal-600 font-bold">✓ {f.name}</span>
+                            <span className="text-slate-400 text-[10px]">({f.notes})</span>
+                          </div>
+                          <button onClick={() => handleRemoveFile(f.id)} className="text-red-500 hover:text-red-700 font-bold text-[10px]">
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  <span>{t('proceedToSolution')}</span>
-                </button>
+                </div>
+
+                {/* Action Buttons: Continue OR Skip */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => handleFinalizeSolution(true)}
+                    className="w-full sm:w-auto px-5 py-3 text-slate-600 hover:text-slate-900 font-bold text-xs rounded-xl border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <FileX className="w-4 h-4 text-slate-400" />
+                    <span>Continue Without Evidence</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleFinalizeSolution(false)}
+                    disabled={loading}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    <span>Generate Full Case Analysis</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
-          {/* RIGHT SIDEBAR: Dynamic Case Understanding Panel */}
+          {/* RIGHT SIDEBAR: AI CASE UNDERSTANDING PANEL */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5 sticky top-24">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 sticky top-24">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <Shield className="w-4 h-4 text-indigo-600" />
-                  <span>What I understand so far</span>
+                  <span>AI Case Understanding</span>
                 </h3>
                 {understanding?.confidence && (
-                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${
+                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
                     understanding.confidence === 'high'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       : understanding.confidence === 'medium'
@@ -343,96 +533,40 @@ export const NewCase: React.FC = () => {
 
               {understanding && (
                 <>
-                  {/* AI Domain Classification Badge */}
-                  {understanding.domainName && (
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        AI Classified Rights Domain
-                      </span>
-                      <div className="inline-flex items-center gap-2 w-full bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl text-xs font-bold text-indigo-900">
-                        <span>⚖️</span>
-                        <span>{understanding.domainName}</span>
-                        {understanding.domainConfidence && (
-                          <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-800">
-                            {Math.round(understanding.domainConfidence * 100)}%
-                          </span>
-                        )}
-                      </div>
+                  {/* AI Generated Descriptive Case Title */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Descriptive Case Title
+                    </span>
+                    <div className="w-full bg-gradient-to-r from-indigo-50 to-teal-50 border border-indigo-200/80 p-3 rounded-2xl text-xs font-extrabold text-indigo-950">
+                      📌 {understanding.caseTitle || understanding.aiCaseDescription}
                     </div>
-                  )}
+                  </div>
 
-                  {/* AI Generated Case Description Label */}
-                  {understanding.aiCaseDescription && (
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        AI Description
-                      </span>
-                      <div className="inline-block w-full bg-gradient-to-r from-indigo-50 to-teal-50 border border-indigo-200/80 p-2.5 rounded-xl text-xs font-bold text-indigo-900">
-                        📌 {understanding.aiCaseDescription}
-                      </div>
-                      <p className="text-[10px] text-slate-400 italic">
-                        Descriptive label only — does not control system logic.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Applicable Statutory Framework */}
-                  {understanding.applicableLaws && understanding.applicableLaws.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        Applicable Legal Framework
-                      </span>
-                      <div className="space-y-1">
-                        {understanding.applicableLaws.map((law, idx) => (
-                          <div key={idx} className="bg-slate-50 text-[11px] font-semibold text-slate-700 p-1.5 rounded border border-slate-200">
-                            📜 {law}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Problem Summary */}
+                  {/* Situation Summary */}
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                       Situation Summary
                     </span>
-                    <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-relaxed">
+                    <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/60 leading-relaxed font-medium">
                       {understanding.situationSummary || understanding.summary}
                     </p>
                   </div>
 
-                  {/* Confirmed Facts */}
+                  {/* Confirmed Facts List */}
                   <div className="space-y-2">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Confirmed Facts ({understanding.confirmedFacts?.length || understanding.knownFacts?.length || 0})
+                      Confirmed Facts ({understanding.confirmedFacts?.length || 0})
                     </span>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                      {(understanding.confirmedFacts || []).map((fact, idx) => (
-                        <div key={idx} className="bg-slate-50 p-2 rounded-md border border-slate-200/60 text-xs">
-                          <span className="font-semibold text-emerald-700">✓ Fact:</span>{' '}
-                          <span className="text-slate-700">{fact.fact}</span>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {understanding.confirmedFacts.map((fact, idx) => (
+                        <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-xs">
+                          <span className="font-bold text-emerald-700">✓ Fact:</span>{' '}
+                          <span className="text-slate-800">{fact.fact}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-
-                  {/* Missing Information */}
-                  {understanding.missingCriticalInformation && understanding.missingCriticalInformation.length > 0 && (
-                    <div className="space-y-1.5">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        I still need to understand
-                      </span>
-                      <ul className="space-y-1">
-                        {understanding.missingCriticalInformation.map((info, idx) => (
-                          <li key={idx} className="text-xs text-amber-800 bg-amber-50 p-2 rounded border border-amber-200/60 flex items-start gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <span>{info}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </>
               )}
             </div>
