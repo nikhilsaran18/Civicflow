@@ -1,14 +1,51 @@
 import { describe, it, expect } from 'vitest';
 import { defaultCivicIntelligenceEngine } from '../services/ai/civicIntelligenceEngine';
 import { defaultQuestionValidator } from '../services/ai/questionValidator';
+import { KnowledgeService } from '../services/knowledgeService';
 
 describe('CRITICAL ACCEPTANCE TEST SUITE — CIVICFLOW AI', () => {
+  it('TEST 0: Tuition Teacher Fee Refund (CRITICAL BUG REPAIR VERIFICATION)', async () => {
+    const input = "my tuition teacher is not refunding my fees";
+    const result = await defaultCivicIntelligenceEngine.analyzeCase(input, {});
+
+    // Must NOT assume higher education, university, UGC, or certificates!
+    const summaryLower = (result.understanding.situationSummary || result.understanding.summary || '').toLowerCase();
+    const descLower = (result.understanding.aiCaseDescription || '').toLowerCase();
+
+    expect(summaryLower).not.toContain('university');
+    expect(summaryLower).not.toContain('ugc');
+    expect(summaryLower).not.toContain('certificate');
+    expect(descLower).not.toContain('higher education');
+
+    // Questions must be relevant to tuition / fee refund
+    const qTexts = result.questions.map(q => q.question.toLowerCase()).join(' ');
+    expect(qTexts).not.toContain('vice-chancellor');
+    expect(qTexts).not.toContain('registrar');
+    expect(qTexts).not.toContain('original certificates');
+
+    // Solution generation & document generation verification
+    const solution = await defaultCivicIntelligenceEngine.generateSolution(input, result.understanding, { receipt_or_proof: 'Yes, UPI receipt' });
+    const suggestedDocTypes = solution.suggestedDocuments.map(d => d.title.toLowerCase()).join(' ');
+    expect(suggestedDocTypes).not.toContain('release of original certificates');
+
+    const docDraft = await defaultCivicIntelligenceEngine.generateDocumentDraft(
+      solution.suggestedDocuments[0]?.type || 'refund_demand',
+      result.understanding.aiCaseDescription,
+      input,
+      { receipt_or_proof: 'Yes, UPI receipt' },
+      solution
+    );
+
+    expect(docDraft.previewMarkdown).not.toContain('RELEASE OF ORIGINAL CERTIFICATES');
+    expect(docDraft.previewMarkdown).not.toContain('University Grants Commission');
+  });
+
   it('TEST 1: Street Light 10 days outage (No receipt/invoice questions allowed!)', async () => {
     const input = "The street light outside my house hasn't worked for 10 days.";
     const result = await defaultCivicIntelligenceEngine.analyzeCase(input, {});
 
     // Must understand municipal public infrastructure context
-    expect(result.understanding.aiCaseDescription).toContain('Municipal');
+    expect(result.understanding.aiCaseDescription).toContain('Lighting');
 
     // Check all generated candidate questions
     const questionTexts = result.questions.map(q => q.question.toLowerCase());
@@ -21,11 +58,11 @@ describe('CRITICAL ACCEPTANCE TEST SUITE — CIVICFLOW AI', () => {
     });
   });
 
-  it('TEST 2: University Certificates Withheld (No landlord/receipt questions allowed!)', async () => {
+  it('TEST 2: University Certificates Withheld', async () => {
     const input = "My university won't return my original certificates.";
     const result = await defaultCivicIntelligenceEngine.analyzeCase(input, {});
 
-    expect(result.understanding.aiCaseDescription).toContain('Education');
+    expect(result.understanding.aiCaseDescription).toContain('Certificate');
 
     const questionTexts = result.questions.map(q => q.question.toLowerCase());
     const illegalTerms = ['receipt', 'landlord', 'electricity account', 'seller'];
@@ -74,5 +111,21 @@ describe('CRITICAL ACCEPTANCE TEST SUITE — CIVICFLOW AI', () => {
 
     expect(result.understanding.summary).not.toContain('Unsupported domain');
     expect(result.understanding.aiCaseDescription).toBeDefined();
+  });
+
+  it('TEST 7: Cross-Case Isolation (Zero contamination across sequential cases)', async () => {
+    // Case A: Certificates
+    const caseA = await defaultCivicIntelligenceEngine.analyzeCase("My university won't return my original certificates.", {});
+    
+    // Case B: Streetlight
+    const caseB = await defaultCivicIntelligenceEngine.analyzeCase("The street light outside my house is broken.", {});
+    expect(JSON.stringify(caseB)).not.toContain('university');
+    expect(JSON.stringify(caseB)).not.toContain('certificates');
+    expect(JSON.stringify(caseB)).not.toContain('UGC');
+
+    // Case C: Pension
+    const caseC = await defaultCivicIntelligenceEngine.analyzeCase("My father's pension stopped.", {});
+    expect(JSON.stringify(caseC)).not.toContain('street light');
+    expect(JSON.stringify(caseC)).not.toContain('university');
   });
 });

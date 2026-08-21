@@ -17,7 +17,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'Government of India / Department of Personnel & Training',
     url: 'https://rtionline.gov.in',
     description: 'Empowers Indian citizens to request information from any public authority within 30 days.',
-    keywords: ['rti', 'information', 'spending', 'fund', 'allocation', 'records', 'contractor', 'road', 'municipality', 'work order', 'delay'],
+    keywords: ['rti', 'right to information', 'public information officer', 'pio', 'inspection of records', 'work order records'],
     lastChecked: '2026-08-01',
   },
   {
@@ -26,7 +26,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'Department of Administrative Reforms and Public Grievances (DARPG)',
     url: 'https://pgportal.gov.in',
     description: 'National portal for lodging grievances related to Central and State Ministries, pension, banking, and public services.',
-    keywords: ['pension', 'father pension', 'bank', 'passport', 'postal', 'central government', 'grievance', 'delay', 'provident fund', 'epfo'],
+    keywords: ['pension', 'father pension', 'old age pension', 'disbursement delay', 'epfo pension', 'jeevan pramaan'],
     lastChecked: '2026-08-01',
   },
   {
@@ -34,8 +34,8 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     title: 'UGC (Redressal of Grievances of Students) Regulations, 2023',
     authority: 'University Grants Commission (UGC)',
     url: 'https://www.ugc.gov.in',
-    description: 'Strictly prohibits higher education institutions from retaining original student certificates or withholding fee refunds.',
-    keywords: ['college', 'university', 'certificates', 'marksheet', 'original certificates', 'degree', 'admission', 'tc', 'transfer certificate', 'fees'],
+    description: 'Strictly prohibits higher education institutions (colleges/universities) from retaining original student certificates or withholding marksheets.',
+    keywords: ['college certificates', 'university certificates', 'withheld marksheets', 'degree withholding', 'ugc regulation', 'original certificates', 'transfer certificate withholding'],
     lastChecked: '2026-08-01',
   },
   {
@@ -44,7 +44,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'Ministry of Housing and Urban Affairs / State Urban Development Departments',
     url: 'https://mohua.gov.in',
     description: 'Mandates local municipal bodies to maintain street lighting, road repairs, sanitation, water supply, and public amenities.',
-    keywords: ['street light', 'light', 'lamp', 'road', 'pothole', 'drainage', 'garbage', 'water supply', 'municipal', 'corporation', 'ward'],
+    keywords: ['street light', 'street lamp', 'public streetlight', 'pothole', 'municipal road', 'ward lighting', 'garbage collection', 'sewage leak'],
     lastChecked: '2026-08-01',
   },
   {
@@ -53,6 +53,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'Central Consumer Protection Authority (CCPA) / District Consumer Commission',
     url: 'https://consumerhelpline.gov.in',
     description: 'Protects consumers against deficiency of service, defective products, misleading advertisements, and unfair trade practices.',
+<<<<<<< HEAD
     keywords: ['product', 'defect', 'warranty', 'purchase', 'seller', 'e-commerce', 'refund', 'invoice', 'receipt', 'faulty item', 'phone', 'laptop', 'merchant', 'store'],
     lastChecked: '2026-08-01',
   },
@@ -126,6 +127,9 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     url: 'https://cpcb.nic.in',
     description: 'Statutory framework for redressing industrial effluent discharge, illegal garbage burning, toxic air pollution, and prohibited noise levels.',
     keywords: ['pollution', 'noise', 'smoke', 'toxic', 'effluent', 'garbage dumping', 'industrial waste', 'loudspeaker'],
+=======
+    keywords: ['defective product', 'warranty repair', 'e-commerce seller', 'deficiency of commercial service', 'commercial receipt', 'product defect'],
+>>>>>>> e877c49 (feat: improve CivicFlow AI case analysis and document generation)
     lastChecked: '2026-08-01',
   },
   {
@@ -134,7 +138,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'Department of Consumer Affairs',
     url: 'https://consumerhelpline.gov.in',
     description: 'Free pre-litigation grievance registration portal and toll-free helpline for consumer disputes.',
-    keywords: ['consumer', 'refund', 'service deficiency', 'bill', 'telecom', 'flight', 'booking'],
+    keywords: ['consumer helpline', 'nch 1915', 'consumer complaint', 'commercial refund dispute'],
     lastChecked: '2026-08-01',
   },
   {
@@ -143,7 +147,7 @@ export const AUTHORITATIVE_SOURCES: AuthoritativeSource[] = [
     authority: 'State RERA Authorities',
     url: 'https://smartcities.gov.in',
     description: 'Protects home buyers against delayed possession, structural defects, and builder non-compliance.',
-    keywords: ['builder', 'flat', 'possession', 'real estate', 'apartment', 'housing', 'rera'],
+    keywords: ['real estate builder', 'flat possession', 'apartment developer', 'rera complaint'],
     lastChecked: '2026-08-01',
   },
 ];
@@ -156,19 +160,21 @@ export class KnowledgeService {
     );
 
     if (matched.length === 0) {
-      // Return general governance source
+      // General governance / administrative remedy source
       return [
         {
-          title: AUTHORITATIVE_SOURCES[0].title,
-          authority: AUTHORITATIVE_SOURCES[0].authority,
-          url: AUTHORITATIVE_SOURCES[0].url,
-          relevance: 'Applicable for information requests and procedural transparency.',
-          lastChecked: AUTHORITATIVE_SOURCES[0].lastChecked,
+          id: 'general-administrative-grievance',
+          title: 'Administrative Representation & Public Grievance Navigation',
+          authority: 'State & Central Public Administration Guidelines',
+          url: 'https://pgportal.gov.in',
+          relevance: 'Applicable for formal written representations and administrative grievance filings.',
+          lastChecked: '2026-08-01',
         },
       ];
     }
 
     return matched.map(src => ({
+      id: src.id,
       title: src.title,
       authority: src.authority,
       url: src.url,
@@ -177,3 +183,4 @@ export class KnowledgeService {
     }));
   }
 }
+

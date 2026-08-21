@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Send, CheckCircle, HelpCircle, Shield, AlertTriangle, ArrowRight, RefreshCw, FileText } from 'lucide-react';
+import { Sparkles, Send, CheckCircle, HelpCircle, Shield, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { defaultCivicIntelligenceEngine } from '../services/ai/civicIntelligenceEngine';
-import { CaseUnderstanding, ClarificationQuestion, CivicSolution, CivicCase } from '../types/civicIntelligence';
+import { CaseUnderstanding, ClarificationQuestion, CivicCase } from '../types/civicIntelligence';
 import { CaseStorageService } from '../services/caseStorageService';
 
 export const NewCase: React.FC = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Strict Unique Case Isolation
+  const [currentCaseId] = useState(() => `case_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
 
   // Initial prompt from state or default
   const initialText = (location.state as any)?.initialProblem || '';
@@ -28,7 +31,7 @@ export const NewCase: React.FC = () => {
   const [thinkingState, setThinkingState] = useState('');
   const [generatingSolution, setGeneratingSolution] = useState(false);
 
-  // Initialize or re-analyze case when problem text changes or initialText is supplied
+  // Initialize or re-analyze case when initialText is supplied
   useEffect(() => {
     if (initialText.trim()) {
       runInitialAnalysis(initialText);
@@ -42,8 +45,8 @@ export const NewCase: React.FC = () => {
     setHasStarted(true);
 
     try {
-      setTimeout(() => setThinkingState('Checking missing information...'), 600);
-      setTimeout(() => setThinkingState('Validating question relevance...'), 1200);
+      setTimeout(() => setThinkingState('Checking missing information...'), 400);
+      setTimeout(() => setThinkingState('Validating question relevance...'), 800);
 
       const res = await defaultCivicIntelligenceEngine.analyzeCase(text, userAnswers);
       setUnderstanding(res.understanding);
@@ -107,10 +110,10 @@ export const NewCase: React.FC = () => {
       );
 
       const newCase: CivicCase = {
-        id: `case_${Date.now()}`,
+        id: currentCaseId,
         title: understanding.aiCaseDescription || 'Civic Matter',
         originalProblem: problemText,
-        currentSummary: understanding.summary,
+        currentSummary: understanding.situationSummary || understanding.summary || problemText,
         desiredOutcome: understanding.desiredOutcome,
         aiCaseDescription: understanding.aiCaseDescription,
         confidence: understanding.confidence,
@@ -141,7 +144,7 @@ export const NewCase: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-            {t('navNewCase')} Workspace
+            {t('navNewCase')} Workspace (Case ID: {currentCaseId.slice(0, 12)})
           </span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Tell us what happened
@@ -169,7 +172,7 @@ export const NewCase: React.FC = () => {
             value={problemText}
             onChange={e => setProblemText(e.target.value)}
             rows={5}
-            placeholder="e.g. The street light near my house has not worked for 10 days..."
+            placeholder="e.g. My tuition teacher is not refunding my fees..."
             className="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900"
           />
 
@@ -278,7 +281,7 @@ export const NewCase: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                   <span className="text-xs text-slate-400">
-                    Question Validator 2-Pass Checked ✓
+                    Question Validator Pass Checked ✓
                   </span>
 
                   <button
@@ -323,10 +326,16 @@ export const NewCase: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <Shield className="w-4 h-4 text-indigo-600" />
-                  <span>{t('caseUnderstandingTitle')}</span>
+                  <span>What I understand so far</span>
                 </h3>
                 {understanding?.confidence && (
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${
+                    understanding.confidence === 'high'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : understanding.confidence === 'medium'
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
                     {understanding.confidence} Confidence
                   </span>
                 )}
@@ -356,13 +365,13 @@ export const NewCase: React.FC = () => {
                   {understanding.aiCaseDescription && (
                     <div className="space-y-1">
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        {t('aiCaseDescriptionLabel')}
+                        AI Description
                       </span>
                       <div className="inline-block w-full bg-gradient-to-r from-indigo-50 to-teal-50 border border-indigo-200/80 p-2.5 rounded-xl text-xs font-bold text-indigo-900">
                         📌 {understanding.aiCaseDescription}
                       </div>
                       <p className="text-[10px] text-slate-400 italic">
-                        Descriptive label only — does not limit system logic.
+                        Descriptive label only — does not control system logic.
                       </p>
                     </div>
                   )}
@@ -386,36 +395,36 @@ export const NewCase: React.FC = () => {
                   {/* Problem Summary */}
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      {t('problemSummary')}
+                      Situation Summary
                     </span>
                     <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-relaxed">
-                      {understanding.summary}
+                      {understanding.situationSummary || understanding.summary}
                     </p>
                   </div>
 
-                  {/* Known Facts */}
+                  {/* Confirmed Facts */}
                   <div className="space-y-2">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      {t('knownFacts')} ({understanding.knownFacts.length})
+                      Confirmed Facts ({understanding.confirmedFacts?.length || understanding.knownFacts?.length || 0})
                     </span>
                     <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                      {understanding.knownFacts.map((fact, idx) => (
+                      {(understanding.confirmedFacts || []).map((fact, idx) => (
                         <div key={idx} className="bg-slate-50 p-2 rounded-md border border-slate-200/60 text-xs">
-                          <span className="font-semibold text-slate-800">{fact.label}:</span>{' '}
-                          <span className="text-slate-600">{fact.value}</span>
+                          <span className="font-semibold text-emerald-700">✓ Fact:</span>{' '}
+                          <span className="text-slate-700">{fact.fact}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Missing Information */}
-                  {understanding.missingInformation.length > 0 && (
+                  {understanding.missingCriticalInformation && understanding.missingCriticalInformation.length > 0 && (
                     <div className="space-y-1.5">
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        {t('missingInfo')}
+                        I still need to understand
                       </span>
                       <ul className="space-y-1">
-                        {understanding.missingInformation.map((info, idx) => (
+                        {understanding.missingCriticalInformation.map((info, idx) => (
                           <li key={idx} className="text-xs text-amber-800 bg-amber-50 p-2 rounded border border-amber-200/60 flex items-start gap-1.5">
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
                             <span>{info}</span>

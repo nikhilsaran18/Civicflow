@@ -6,9 +6,10 @@ export interface BackendHealth {
 
 export class GeminiClient {
   private isBackendConfigured: boolean = false;
+  private healthCheckPromise: Promise<BackendHealth> | null = null;
 
   constructor() {
-    this.checkHealth();
+    this.healthCheckPromise = this.checkHealth();
   }
 
   public async checkHealth(): Promise<BackendHealth> {
@@ -30,6 +31,15 @@ export class GeminiClient {
     return this.isBackendConfigured;
   }
 
+  public async isConfigured(): Promise<boolean> {
+    if (this.healthCheckPromise) {
+      const h = await this.healthCheckPromise;
+      return h.geminiConfigured;
+    }
+    const h = await this.checkHealth();
+    return h.geminiConfigured;
+  }
+
   public async callBackend<T>(action: string, payload: any): Promise<T | null> {
     try {
       const response = await fetch('/api/civic-ai', {
@@ -49,6 +59,11 @@ export class GeminiClient {
       return null;
     }
   }
+
+  public async generateJSON<T>(systemInstruction: string, userPrompt: string): Promise<T | null> {
+    return this.callBackend<T>('understand', { userDescription: userPrompt, answers: {} });
+  }
 }
 
 export const defaultGeminiClient = new GeminiClient();
+

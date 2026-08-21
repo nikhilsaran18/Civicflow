@@ -15,63 +15,7 @@ export const Cases: React.FC = () => {
 
   useEffect(() => {
     const loaded = CaseStorageService.getCases();
-    if (loaded.length === 0) {
-      // Seed initial demo cases for hackathon judge evaluation
-      const demoSeeded: CivicCase[] = [
-        {
-          id: 'demo_case_1',
-          title: 'Municipal Street Light Outage',
-          originalProblem: 'The street light outside my house has not worked for 10 days.',
-          currentSummary: 'Unmaintained street lamp in local municipal ward causing public safety concern.',
-          aiCaseDescription: 'Municipal Infrastructure Grievance',
-          confidence: 'high',
-          status: 'action_required',
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-          updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-          messages: [],
-          answers: { location: 'Ward 14, Main Road, Chennai' },
-          understanding: {
-            summary: 'Unmaintained public street light',
-            knownFacts: [{ label: 'Duration', value: '10 days' }],
-            missingInformation: [],
-            desiredOutcomeKnown: true,
-            desiredOutcome: 'Street light repair by municipal corporation',
-            aiCaseDescription: 'Municipal Infrastructure Grievance',
-            jurisdictionNeeded: false,
-            confidence: 'high',
-            readyForSolution: true,
-          },
-        },
-        {
-          id: 'demo_case_2',
-          title: 'Withheld University Original Marksheets',
-          originalProblem: 'My college refuses to return my original certificates.',
-          currentSummary: 'Higher education institution withholding student marksheets in violation of UGC 2023 guidelines.',
-          aiCaseDescription: 'Higher Education Student Grievance',
-          confidence: 'high',
-          status: 'action_required',
-          createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          messages: [],
-          answers: { location: 'State University College' },
-          understanding: {
-            summary: 'College withholding original marksheets',
-            knownFacts: [],
-            missingInformation: [],
-            desiredOutcomeKnown: true,
-            desiredOutcome: 'Return of original certificates',
-            aiCaseDescription: 'Higher Education Student Grievance',
-            jurisdictionNeeded: false,
-            confidence: 'high',
-            readyForSolution: true,
-          },
-        },
-      ];
-      demoSeeded.forEach(c => CaseStorageService.saveCase(c));
-      setCases(demoSeeded);
-    } else {
-      setCases(loaded);
-    }
+    setCases(loaded);
   }, []);
 
   const filteredCases = cases.filter(c => {

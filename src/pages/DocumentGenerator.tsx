@@ -30,22 +30,24 @@ export const DocumentGenerator: React.FC = () => {
       setCivicCase(currentCase);
       const docType = documentId || (location.state as any)?.docType || 'complaint';
 
-      const generated = defaultCivicIntelligenceEngine.generateDocumentDraft(
-        docType,
-        currentCase.title,
-        currentCase.originalProblem,
-        currentCase.answers,
-        currentCase.solution
-      );
-
-      setDoc(generated);
-      setApplicantName(generated.fields.applicantName || '');
-      setApplicantAddress(generated.fields.applicantAddress || '');
-      setApplicantPhone(generated.fields.applicantPhone || '');
+      defaultCivicIntelligenceEngine
+        .generateDocumentDraft(
+          docType,
+          currentCase.title,
+          currentCase.originalProblem,
+          currentCase.answers,
+          currentCase.solution
+        )
+        .then(generated => {
+          setDoc(generated);
+          setApplicantName(generated.fields.applicantName || '');
+          setApplicantAddress(generated.fields.applicantAddress || '');
+          setApplicantPhone(generated.fields.applicantPhone || '');
+        });
     }
   }, [id, documentId, location.state]);
 
-  const handleUpdateFields = () => {
+  const handleUpdateFields = async () => {
     if (!civicCase || !doc) return;
     const updatedAnswers = {
       ...civicCase.answers,
@@ -54,7 +56,7 @@ export const DocumentGenerator: React.FC = () => {
       applicant_phone: applicantPhone,
     };
 
-    const newDoc = defaultCivicIntelligenceEngine.generateDocumentDraft(
+    const newDoc = await defaultCivicIntelligenceEngine.generateDocumentDraft(
       doc.documentType,
       civicCase.title,
       civicCase.originalProblem,
