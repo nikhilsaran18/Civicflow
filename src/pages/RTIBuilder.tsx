@@ -28,22 +28,38 @@ export const RTIBuilder: React.FC = () => {
     if (caseData) {
       if (caseData.answers?.applicant_name) setApplicantName(String(caseData.answers.applicant_name));
       if (caseData.answers?.location) setAddress(String(caseData.answers.location));
+      if (caseData.answers?.applicant_phone) setPhone(String(caseData.answers.applicant_phone));
+
       if (caseData.solution?.responsibleAuthority?.name) {
         setPublicAuthority(caseData.solution.responsibleAuthority.name);
       }
-      setInfoRequested(
-        `1. Certified copies of official records, file notings, work orders, and expenditure statements regarding: "${caseData.originalProblem}".\n2. Name and designation of the inspecting officer responsible for this matter.`
-      );
+
+      const probLower = caseData.originalProblem.toLowerCase();
+      if (probLower.includes('pension')) {
+        setInfoRequested(
+          `1. Provide certified copies of recorded reasons for suspension/non-credit of pension.\n2. Provide certified copies of correspondence between the pension disbursing bank/CPPC and the pension sanctioning authority regarding PPO records.\n3. Provide names and designations of officers responsible for processing pension restoration.`
+        );
+      } else if (probLower.includes('caste') || probLower.includes('certificate')) {
+        setInfoRequested(
+          `1. Provide certified copies of daily action taken reports and file notings regarding Caste Certificate Application.\n2. Provide names and designations of officers with whom the file has been pending beyond prescribed statutory timelines.\n3. Provide certified copy of VAO / Revenue Inspector field verification report.`
+        );
+      } else if (probLower.includes('university') || probLower.includes('college')) {
+        setInfoRequested(
+          `1. Provide certified copies of university circulars and UGC guidelines regarding retention of student original certificates.\n2. Provide certified copies of action taken on written representation for release of original certificates.`
+        );
+      } else {
+        setInfoRequested(
+          `1. Provide certified copies of official public records, file notings, inspection notes, and work order allocations regarding: "${caseData.originalProblem}".\n2. Provide names and designations of inspecting officers and public authorities overseeing this matter.`
+        );
+      }
     } else {
-      // Demo defaults
-      setApplicantName('Arun Kumar');
-      setAddress('123 Gandhi Road, Ward 14, Chennai - 600001');
-      setPhone('+91 98765 43210');
-      setPublicAuthority('Greater Chennai Corporation');
-      setDepartment('Public Works & Electrical Division');
-      setInfoRequested(
-        'Certified copies of tender allocation documents, contractor completion timelines, and total funds sanctioned for streetlight maintenance in Ward 14.'
-      );
+      // Normal Flow: Leave fields empty for real citizen entry
+      setApplicantName('');
+      setAddress('');
+      setPhone('');
+      setPublicAuthority('');
+      setDepartment('');
+      setInfoRequested('');
     }
   }, [caseData]);
 
@@ -52,20 +68,20 @@ BEFORE THE PUBLIC INFORMATION OFFICER (PIO)
 Under Section 6(1) of the Right to Information Act, 2005
 
 To,
-The Central Public Information Officer (CPIO),
+The Central / State Public Information Officer (PIO),
 ${authority ? authority.toUpperCase() : '[PUBLIC AUTHORITY NAME]'}
 Department / Division: ${department || '[DEPARTMENT / DIVISION]'}
 
 1. APPLICANT DETAILS:
-   Full Name: ${applicantName || '[APPLICANT FULL NAME]'}
-   Postal Address: ${address || '[POSTAL ADDRESS]'}
-   Contact Number: ${phone || '[CONTACT NUMBER]'}
+   Full Name: ${applicantName || '[YOUR FULL NAME]'}
+   Postal Address: ${address || '[YOUR POSTAL ADDRESS]'}
+   Contact Number: ${phone || '[YOUR CONTACT NUMBER]'}
 
 2. PARTICULARS OF INFORMATION REQUESTED:
-   Subject: Application under Section 6(1) of RTI Act 2005 seeking certified public records.
+   Subject: Application under Section 6(1) of RTI Act 2005 seeking certified public records and information.
    
-   Specific Details Requested:
-   ${infoRequested || '[SPECIFIC INFORMATION REQUESTED]'}
+   Specific Records / Information Sought:
+   ${infoRequested || '[SPECIFIC INFORMATION / CERTIFIED COPIES REQUESTED]'}
 
    Period to which information pertains: ${period}
 
@@ -74,8 +90,8 @@ Department / Division: ${department || '[DEPARTMENT / DIVISION]'}
 
 4. FEE DETAILS:
    ${isBPL 
-     ? `Applicant belongs to Below Poverty Line (BPL) category. BPL Ration Card No: ${bplCardNo || 'Attached'}. Application fee is exempted under Section 7(5).` 
-     : `RTI Application Fee of ₹10 attached via Indian Postal Order (IPO) / Court Fee Stamp / Online Ack.`
+     ? `Applicant belongs to Below Poverty Line (BPL) category. BPL Card No: ${bplCardNo || 'Attached'}. Application fee is exempted under Section 7(5).` 
+     : `RTI Application Fee of ₹10 attached via Indian Postal Order (IPO) / Court Fee Stamp / Online Acknowledgement.`
    }
 
 5. DECLARATION:
@@ -98,14 +114,16 @@ Signature of Applicant (${applicantName || 'Applicant'})
   };
 
   const handleDownloadTxt = () => {
+    const dateStr = new Date().toISOString().split('T')[0];
     const element = document.createElement('a');
     const file = new Blob([generatedDraftText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `RTI_Application_${Date.now()}.txt`;
+    element.download = `CivicFlow_RTI_Application_${dateStr}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
+
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 px-4 py-6">

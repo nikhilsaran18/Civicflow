@@ -15,11 +15,53 @@ export class CaseStorageService {
 
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) return [];
-      return JSON.parse(data) as CivicCase[];
+      const parsed = JSON.parse(data) as CivicCase[];
+
+      // Normalize cases safely
+      return parsed.map(c => this.normalizeCase(c));
     } catch {
       return [];
     }
   }
+
+  public static normalizeCase(c: CivicCase): CivicCase {
+    if (!c) return c;
+    const text = (c.originalProblem || c.title || '').toLowerCase();
+    
+    let derivedBadge = c.categoryBadge || c.solution?.categoryBadge || c.understanding?.categoryBadge;
+    if (!derivedBadge) {
+      if (text.includes('pension')) derivedBadge = 'PENSION / ADMINISTRATIVE';
+      else if (text.includes('rent') || text.includes('deposit') || text.includes('landlord') || text.includes('tenant')) derivedBadge = 'TENANCY';
+      else if (text.includes('light') || text.includes('lamp') || text.includes('road') || text.includes('water') || text.includes('garbage')) derivedBadge = 'MUNICIPAL SERVICE';
+      else if (text.includes('university') || text.includes('college') || text.includes('marksheet') || text.includes('tuition') || text.includes('fee')) derivedBadge = 'EDUCATION';
+      else if (text.includes('caste') || text.includes('certificate') || text.includes('aadhaar') || text.includes('passport')) derivedBadge = 'DOCUMENTATION';
+      else if (text.includes('product') || text.includes('seller') || text.includes('phone') || text.includes('refund')) derivedBadge = 'CONSUMER DISPUTE';
+      else derivedBadge = 'CIVIC MATTER';
+    }
+
+    // Clean up confirmed facts if questions were stored as facts
+    const cleanedFacts = (c.understanding?.confirmedFacts || []).map(f => {
+      let factStr = f.fact;
+      if (factStr.includes('?: ') || factStr.includes('?:')) {
+        const parts = factStr.split('?:');
+        const ansPart = parts[parts.length - 1].trim();
+        factStr = `The citizen stated: ${ansPart}`;
+      }
+      return { ...f, fact: factStr };
+    });
+
+    return {
+      ...c,
+      categoryBadge: derivedBadge,
+      analysisVersion: c.analysisVersion || 3,
+      understanding: {
+        ...c.understanding,
+        categoryBadge: derivedBadge,
+        confirmedFacts: cleanedFacts,
+      },
+    };
+  }
+
 
   public static getCaseById(id: string): CivicCase | null {
     if (!id) return null;

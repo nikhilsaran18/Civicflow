@@ -76,8 +76,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (dictionaries.en[key as keyof Dictionary] && typeof dictionaries.en[key as keyof Dictionary] === 'string') {
       return dictionaries.en[key as keyof Dictionary] as string;
     }
-    return key;
+
+    // Convert camelCase or raw key to human readable fallback string
+    const readable = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+    return readable;
   };
+
 
   const activeDict = dictionaries[language] || dictionaries.en;
   const t: TranslateFunction = Object.assign((key: string) => translate(key), activeDict, dictionaries.en);

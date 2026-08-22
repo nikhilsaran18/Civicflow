@@ -419,7 +419,7 @@ export const CaseDetail: React.FC = () => {
             <h2>{t('actionStudioTitle')}</h2>
           </div>
           <p className="text-xs text-slate-400">
-            Generate customized legal representations, RTI applications, and formal complaints tailored to your case.
+            Generate customized legal representations, RTI applications, and formal complaints tailored specifically to your case facts.
           </p>
         </div>
 
@@ -442,11 +442,20 @@ export const CaseDetail: React.FC = () => {
               className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-sm rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-2"
             >
               <FileText className="w-4 h-4" />
-              <span>Generate Formal Complaint Draft</span>
+              <span>Generate Formal Representation Draft</span>
             </button>
           )}
+
+          <button
+            onClick={() => handleOpenActionStudio('rti')}
+            className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-sm rounded-xl border border-teal-500/40 shadow-md transition-all flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4 text-teal-400" />
+            <span>{t('generateRTIFromCase')}</span>
+          </button>
         </div>
       </section>
+
     </div>
   );
 };

@@ -21,13 +21,14 @@ export const FormFill: React.FC = () => {
     const found = formService.getTemplateById(id);
     if (found) {
       setTemplate(found);
-      // Pre-fill initial defaults
+      // Pre-fill initial empty values
       setFormData({
-        name: 'Arun Kumar',
-        address: '123 Gandhi Street, Ward 14, Chennai',
-        phone: '+91 98765 43210',
-        authority: 'Greater Chennai Corporation'
+        name: '',
+        address: '',
+        phone: '',
+        authority: ''
       });
+
     } else {
       navigate('/forms');
     }

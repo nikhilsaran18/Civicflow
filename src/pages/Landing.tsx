@@ -5,12 +5,14 @@ import { useLanguage } from '../context/LanguageContext';
 import { TranslatorService, TranslationResult } from '../services/translatorService';
 
 const EXAMPLE_PROMPTS = [
-  "The street light outside my house hasn't worked for 10 days.",
-  "My university won't return my original certificates.",
   "My father's pension stopped three months ago unexpectedly.",
-  "I want to know how much the municipality spent repairing my road.",
-  "They haven't paid me for my work.",
+  "My university won't return my original certificates.",
+  "I applied for a caste certificate through the government portal six weeks ago and it still shows under processing.",
+  "My landlord is refusing to return my security deposit even though I moved out two weeks ago.",
+  "The street light outside my house hasn't worked for 10 days.",
+  "My teacher refused to refund my fee.",
 ];
+
 
 export const Landing: React.FC = () => {
   const { t } = useLanguage();

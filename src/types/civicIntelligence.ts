@@ -43,6 +43,7 @@ export interface PartyInfo {
 
 export interface CaseUnderstanding {
   caseTitle: string;
+  categoryBadge?: string;
   situationSummary: string;
   summary?: string; // fallback alias
   confirmedFacts: ConfirmedFact[];
@@ -56,9 +57,11 @@ export interface CaseUnderstanding {
   confidence: 'low' | 'medium' | 'high';
   readyForSolution?: boolean;
   readinessReason?: string;
+  domain?: string;
   domainName?: string; // internal compatibility
   applicableLaws?: string[];
 }
+
 
 export interface OptionPath {
   id?: string;
@@ -112,6 +115,7 @@ export interface ResponsibleAuthority {
 
 export interface CivicSolution {
   caseTitle: string;
+  categoryBadge?: string;
   situationSummary: string;
   userGoal: string;
   whatCivicFlowFound: string;
@@ -158,10 +162,12 @@ export interface CivicCase {
   id: string;
   userId?: string;
   title: string;
+  categoryBadge?: string;
   originalProblem: string;
   currentSummary: string;
   confidence: 'low' | 'medium' | 'high';
   status: 'analysing' | 'action_required' | 'waiting' | 'resolved' | 'archived';
+  analysisVersion?: number;
   createdAt: string;
   updatedAt: string;
   understanding: CaseUnderstanding;
@@ -174,4 +180,5 @@ export interface CivicCase {
   caseFileMarkdown?: string;
   answers: Record<string, string | string[]>;
 }
+
 

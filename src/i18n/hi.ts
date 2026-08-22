@@ -107,4 +107,36 @@ export const hi = {
   error: 'एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें।',
   save: 'सहेजें',
   cancel: 'रद्द करें',
+  safetyDisclaimer: 'सिविकफ्लो AI नागरिक और कानूनी मार्गदर्शन प्रदान करता है। यह किसी योग्य वकील या कानूनी प्रतिनिधि का विकल्प नहीं है।',
+
+  // New Case & Workspace
+  newCaseTitle: 'बताएं कि क्या हुआ',
+  newCaseSubtitle: 'अपनी नागरिक या कानूनी समस्या को अपनी भाषा में बताएं। सिविकफ्लो AI विश्लेषण करेगा और आवश्यक स्पष्टीकरण प्रश्न पूछेगा।',
+  originalStatement: 'मूल विवरण',
+  clarificationRecord: 'स्पष्टीकरण रिकॉर्ड',
+  aiCaseUnderstanding: 'AI केस की समझ',
+  descriptiveCaseTitle: 'केस का शीर्षक',
+  situationSummaryLabel: 'स्थिति का सारांश',
+  confirmedFactsLabel: 'पुष्ट तथ्य',
+  viewPlan: 'प्लान देखें',
+  startNewCase: 'नया केस शुरू करें',
+  continueWithoutEvidence: 'बिना साक्ष्य के आगे बढ़ें',
+  generateFullAnalysis: 'पूर्ण केस विश्लेषण जनरेट करें',
+  generateRTIFromCase: 'इस केस से RTI ड्राफ्ट करें',
+  caseNotFound: 'केस लोड हो रहा है या नहीं मिला',
+  returnToCases: 'मेरे केस पर वापस जाएं',
+  quickTemplatesTitle: 'त्वरित दस्तावेज़ टेम्प्लेट',
+  quickTemplatesSubtitle: 'सामान्य आवेदनों के लिए वैकल्पिक सुविधा टेम्प्लेट। केस-विशिष्ट दस्तावेज़ के लिए "मेरे केस से जनरेट करें" का उपयोग करें।',
+  generateFromCase: 'मेरे केस से जनरेट करें',
+  clearAllCases: 'सभी केस रीसेट / साफ़ करें',
+
+  // Category Badges
+  badgePension: 'पेंशन / प्रशासनिक',
+  badgeTenancy: 'किरायेदारी मामला',
+  badgeMunicipal: 'नगर निगम सेवा',
+  badgeEducation: 'शिक्षा / कॉलेज',
+  badgeCasteCert: 'दस्तावेज़ / प्रमाण पत्र',
+  badgeConsumer: 'उपभोक्ता विवाद',
+  badgeGeneral: 'नागरिक मामला',
 };
+

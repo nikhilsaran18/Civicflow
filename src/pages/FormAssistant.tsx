@@ -13,21 +13,39 @@ export const FormAssistant: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-2 text-center max-w-xl mx-auto">
-        <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-          Module 4 — Guided Form Assistant
+        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+          {t('quickTemplatesTitle')}
         </span>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Complete Civic Forms Step by Step</h1>
+        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t('quickTemplatesTitle')}</h1>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Guided step-by-step assistant for official petitions, consumer demand notices, and public service requests.
+          {t('quickTemplatesSubtitle')}
         </p>
+      </div>
+
+      {/* Generate From Case Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-6 rounded-3xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-800">
+        <div className="space-y-1">
+          <h3 className="font-extrabold text-base text-white">Have a specific case narrative?</h3>
+          <p className="text-xs text-indigo-200">
+            Use the Universal AI Case Engine to dynamically generate tailored complaints, RTI applications, and legal notices from your facts.
+          </p>
+        </div>
+        <Link
+          to="/case/new"
+          className="px-5 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-xs rounded-xl shadow-md flex-shrink-0 flex items-center gap-1.5"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>{t('generateFromCase')}</span>
+        </Link>
       </div>
 
       {/* Form Templates Cards Grid */}
       <div className="space-y-4">
-        <h2 className="text-base font-bold text-slate-900 dark:text-white">Available Form Templates</h2>
+        <h2 className="text-base font-bold text-slate-900 dark:text-white">Optional Convenience Templates</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {templates.map(tmpl => (
+
             <div
               key={tmpl.id}
               className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col justify-between"

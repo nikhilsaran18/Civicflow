@@ -107,4 +107,36 @@ export const en = {
   error: 'An unexpected error occurred. Please try again.',
   save: 'Save',
   cancel: 'Cancel',
+  safetyDisclaimer: 'CivicFlow AI provides civic and legal information and navigation support. It does not replace advice or representation from a qualified legal professional.',
+
+  // New Case & Workspace
+  newCaseTitle: 'Tell us what happened',
+  newCaseSubtitle: 'Describe your civic or legal issue in plain language. CivicFlow AI will analyze your problem and ask dynamic clarification questions.',
+  originalStatement: 'Original Statement',
+  clarificationRecord: 'Clarification Record',
+  aiCaseUnderstanding: 'AI Case Understanding',
+  descriptiveCaseTitle: 'Descriptive Case Title',
+  situationSummaryLabel: 'Situation Summary',
+  confirmedFactsLabel: 'Confirmed Facts',
+  viewPlan: 'View Plan',
+  startNewCase: 'Start New Case',
+  continueWithoutEvidence: 'Continue Without Evidence',
+  generateFullAnalysis: 'Generate Full Case Analysis',
+  generateRTIFromCase: 'Generate RTI From This Case',
+  caseNotFound: 'Case Loading or Not Found',
+  returnToCases: 'Return to My Cases',
+  quickTemplatesTitle: 'Quick Document Templates',
+  quickTemplatesSubtitle: 'Optional convenience templates for common administrative requests. For case-tailored documents, use Generate From My Case.',
+  generateFromCase: 'Generate From My Case',
+  clearAllCases: 'Reset / Clear All Cases',
+
+  // Category Badges
+  badgePension: 'PENSION / ADMINISTRATIVE',
+  badgeTenancy: 'TENANCY',
+  badgeMunicipal: 'MUNICIPAL SERVICE',
+  badgeEducation: 'EDUCATION',
+  badgeCasteCert: 'DOCUMENTATION / CERTIFICATE',
+  badgeConsumer: 'CONSUMER DISPUTE',
+  badgeGeneral: 'CIVIC MATTER',
 };
+

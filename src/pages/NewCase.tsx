@@ -78,11 +78,41 @@ export const NewCase: React.FC = () => {
     }
   };
 
+  const formatDeclarativeFact = (q: ClarificationQuestion, answerVal: string | string[]): string => {
+    const answerStr = Array.isArray(answerVal) ? answerVal.join(', ') : answerVal;
+    const qText = q.question.toLowerCase();
+
+    if (qText.includes('type of pension') || qText.includes('pension type')) {
+      return `The pensioner receives a ${answerStr}.`;
+    }
+    if (qText.includes('life certificate')) {
+      return `Life Certificate status: ${answerStr}.`;
+    }
+    if (qText.includes('tenancy') || qText.includes('rental agreement')) {
+      return `Rental agreement status: ${answerStr}.`;
+    }
+    if (qText.includes('notice') && (qText.includes('move out') || qText.includes('moving out'))) {
+      return `Tenancy move-out notice status: ${answerStr}.`;
+    }
+    if (qText.includes('application acknowledgement') || qText.includes('reference number')) {
+      return `Application reference status: ${answerStr}.`;
+    }
+    if (qText.includes('reason for withholding') || qText.includes('reason given')) {
+      return `Stated reason given: ${answerStr}.`;
+    }
+    if (qText.includes('primary outcome') || qText.includes('outcome do you wish')) {
+      return `Primary requested outcome: ${answerStr}.`;
+    }
+
+    return `Citizen confirmed: ${answerStr}.`;
+  };
+
+
+
   const handleAnswerSubmit = async () => {
     if (!currentQuestion || !understanding) return;
 
     const answerVal = currentAnswerInput;
-    const answerStr = Array.isArray(answerVal) ? answerVal.join(', ') : answerVal;
 
     // Record Q&A pair
     const qaPair: QuestionAnswerPair = {
@@ -93,14 +123,22 @@ export const NewCase: React.FC = () => {
     const updatedQA = [...qAndAHistory, qaPair];
     setQAndAHistory(updatedQA);
 
-    // Update confirmed facts
+    // Update confirmed facts with declarative factual statement
     const newFact: ConfirmedFact = {
       id: `ans_${questionNumber}`,
-      fact: `${currentQuestion.question}: ${answerStr}`,
+      fact: formatDeclarativeFact(currentQuestion, answerVal),
       source: 'clarification_answer',
     };
     const updatedFacts = [...understanding.confirmedFacts, newFact];
-    const updatedUnderstanding = { ...understanding, confirmedFacts: updatedFacts };
+    
+    // Dynamic confidence calculation: LOW -> MEDIUM (Q1/Q2) -> HIGH (Q3)
+    const nextConfidence = updatedQA.length >= 3 ? 'high' : 'medium';
+
+    const updatedUnderstanding = {
+      ...understanding,
+      confirmedFacts: updatedFacts,
+      confidence: nextConfidence,
+    };
     setUnderstanding(updatedUnderstanding);
 
     const updatedAnswers = { ...userAnswersRecord, [currentQuestion.id]: answerVal };
@@ -178,7 +216,7 @@ export const NewCase: React.FC = () => {
     try {
       const evidenceFacts: ConfirmedFact[] = uploadedFiles.map(f => ({
         id: f.id,
-        fact: `Document Evidence: ${f.name} (${f.notes})`,
+        fact: `Document Evidence Attached: ${f.name} (${f.notes})`,
         source: 'evidence_file',
       }));
 
@@ -189,16 +227,24 @@ export const NewCase: React.FC = () => {
         evidenceFacts
       );
 
+      const categoryBadge = fullSolution.categoryBadge || understanding.categoryBadge || defaultCivicIntelligenceEngine.deriveCategoryBadge(problemText);
+
       const finalCase: CivicCase = {
         id: currentCaseId,
         title: fullSolution.caseTitle || understanding.caseTitle || 'Civic Matter',
+        categoryBadge,
         originalProblem: problemText,
         currentSummary: fullSolution.situationSummary || understanding.situationSummary,
         confidence: fullSolution.confidence || 'high',
         status: 'action_required',
+        analysisVersion: 3,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        understanding,
+        understanding: {
+          ...understanding,
+          categoryBadge,
+          confidence: fullSolution.confidence || 'high',
+        },
         qAndA: qAndAHistory,
         recommendedEvidence,
         uploadedEvidence: uploadedFiles.map(f => ({
@@ -229,6 +275,7 @@ export const NewCase: React.FC = () => {
       setThinkingState('');
     }
   };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

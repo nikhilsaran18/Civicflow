@@ -107,4 +107,36 @@ export const ta = {
   error: 'எதிர்பாராத பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.',
   save: 'சேமி',
   cancel: 'ரத்து செய்',
+  safetyDisclaimer: 'சிவிக்ஃபுளோ AI குடிமை மற்றும் சட்ட ஆலோசனைகளை வழங்குகிறது. இது தகுதியான வழக்கறிஞரின் சட்டப்பூர்வ பிரதிநிதித்துவத்திற்கு மாற்றாகாது.',
+
+  // New Case & Workspace
+  newCaseTitle: 'என்ன நடந்தது என்று கூறுங்கள்',
+  newCaseSubtitle: 'உங்கள் பிரச்சனையையோ சட்டப் சிக்கலையோ எளிய மொழியில் விவரியுங்கள். சிவிக்ஃபுளோ AI பகுப்பாய்வு செய்து தேவையான தெளிவுபடுத்தல் கேள்விகளைக் கேட்கும்.',
+  originalStatement: 'அசல் கூற்று',
+  clarificationRecord: 'தெளிவுபடுத்தல் பதிவு',
+  aiCaseUnderstanding: 'AI வழக்கு புரிதல்',
+  descriptiveCaseTitle: 'வழக்கின் தலைப்பு',
+  situationSummaryLabel: 'சூழ்நிலை சுருக்கம்',
+  confirmedFactsLabel: 'உறுதிப்படுத்தப்பட்ட தகவல்கள்',
+  viewPlan: 'திட்டத்தைப் பார்',
+  startNewCase: 'புதிய வழக்கைத் தொடங்கு',
+  continueWithoutEvidence: 'ஆதாரம் இல்லாமல் தொடரவும்',
+  generateFullAnalysis: 'முழு வழக்கு பகுப்பாய்வை உருவாக்கு',
+  generateRTIFromCase: 'இந்த வழக்கிலிருந்து RTI மனு உருவாக்கு',
+  caseNotFound: 'வழக்கு ஏற்றப்படுகிறது அல்லது கிடைக்கவில்லை',
+  returnToCases: 'என் வழக்குகளுக்குத் திரும்பு',
+  quickTemplatesTitle: 'விரைவு ஆவண மாதிரி படிவங்கள்',
+  quickTemplatesSubtitle: 'பொதுவான அரசு விண்ணப்பங்களுக்கான விருப்ப மாதிரி படிவங்கள். வழக்கு சார்ந்த ஆவணங்களுக்கு "என் வழக்கிலிருந்து உருவாக்கு" வசதியைப் பயன்படுத்தவும்.',
+  generateFromCase: 'என் வழக்கிலிருந்து உருவாக்கு',
+  clearAllCases: 'அனைத்து வழக்குகளையும் அழி / மீட்டமை',
+
+  // Category Badges
+  badgePension: 'ஓய்வூதியம் / நிர்வாகம்',
+  badgeTenancy: 'வாடகை / வீட்டுப் பிரச்சனை',
+  badgeMunicipal: 'நகராட்சி சேவை',
+  badgeEducation: 'கல்வி / கல்லூரி',
+  badgeCasteCert: 'சான்றிதழ் / ஆவணம்',
+  badgeConsumer: 'நுகர்வோர் பிரச்சனை',
+  badgeGeneral: 'பொது குடிமைப் பிரச்சனை',
 };
+

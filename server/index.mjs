@@ -53,10 +53,11 @@ Current Answers: ${JSON.stringify(answers)}
 
 Return ONLY a JSON object matching this exact schema:
 {
-  "caseTitle": "Specific descriptive title derived strictly from case facts (e.g., Security Deposit Refund Dispute)",
+  "caseTitle": "Specific descriptive title derived strictly from case facts (3-8 words, e.g. Unexpected Cessation of Father's Pension, Rental Security Deposit Dispute)",
+  "categoryBadge": "Concise 1-3 word badge describing category (e.g. PENSION / ADMINISTRATIVE, TENANCY, MUNICIPAL SERVICE, EDUCATION, CASTE CERTIFICATE, CONSUMER DISPUTE)",
   "situationSummary": "Plain language overview of the citizen's situation",
   "confirmedFacts": [
-    { "id": "f1", "fact": "Fact text", "source": "initial_statement" }
+    { "id": "f1", "fact": "Declarative factual statement extracted from narrative (e.g. The father receives a Government Employee Pension which stopped 3 months ago)", "source": "initial_statement" }
   ],
   "inferences": ["Reasonable inference 1"],
   "unknowns": ["Missing fact 1"],
@@ -64,7 +65,7 @@ Return ONLY a JSON object matching this exact schema:
     { "name": "Party name if known, else role", "type": "landlord | employer | seller | municipal_corporation | government_department | institute | utility_provider | individual | unknown" }
   ],
   "responsiblePartyType": "private | government | individual | commercial",
-  "likelyGoal": "Citizen objective derived strictly from narrative",
+  "likelyGoal": "Specific citizen objective derived from narrative (e.g. Restore pension payments and recover outstanding pension arrears)",
   "jurisdictionRelevant": true,
   "confidence": "low" | "medium" | "high"
 }`;
@@ -84,10 +85,10 @@ Previous Questions & Answers: ${JSON.stringify(previousQA)}
 
 RULES:
 1. Generate EXACTLY ONE question.
-2. DO NOT repeat any previous question.
-3. Consider previous answers when framing Question #${questionNumber}.
-4. Must materially improve case understanding, jurisdiction, authority selection, evidence recommendation, or remedy.
-5. If Question #${questionNumber} is 3, make it the final clarification step.
+2. DO NOT repeat any previous question or ask facts already answered in original narrative.
+3. Make question specific to the situation (e.g. for pension, ask about PPO/bank/department; for caste cert, ask about portal/acknowledgment number/authority; for university, ask about written reason/course status).
+4. DO NOT use generic terms like "opposing party" unless there is a private counterparty.
+5. Must materially improve case understanding, jurisdiction, authority selection, evidence recommendation, or remedy.
 
 Return ONLY JSON matching schema:
 {
@@ -138,7 +139,7 @@ Return ONLY JSON matching schema:
   "recommendedEvidence": [
     {
       "id": "ev1",
-      "title": "Short evidence title (e.g., Rental Agreement, Receipt, Photos)",
+      "title": "Short evidence title (e.g., Pension Payment Order (PPO), Rent Agreement, Caste Application Acknowledgment)",
       "reason": "Why this evidence is helpful for this case",
       "priority": "recommended" | "optional"
     }
@@ -178,21 +179,24 @@ All 3 Clarification Q&A: ${JSON.stringify(qAndA)}
 Evidence Facts: ${JSON.stringify(evidenceFacts)}
 
 CRITICAL INSTRUCTIONS:
-- DO NOT force into preset categories.
-- DO NOT invent authorities, laws, portal URLs, or deadlines.
-- If responsible authority cannot be determined with confidence, set "responsibleAuthority": null and explain why verification is needed.
+- DO NOT use generic default names such as "Nodal Public Authority / Service Provider" or "Formal Administrative Representation".
+- DO NOT invent fake authority names, statutory laws, portal URLs, or deadlines.
+- If responsible authority requires location/jurisdiction verification, set authority name to "Requires jurisdiction verification" and state what details are needed.
+- Derive a specific citizen goal (e.g. "Restore pension payments and recover outstanding pension arrears").
+- Derive a specific category badge (e.g. "PENSION / ADMINISTRATIVE", "TENANCY", "MUNICIPAL SERVICE", "EDUCATION", "CASTE CERTIFICATE").
 
 Return ONLY JSON matching schema:
 {
-  "caseTitle": "Descriptive Case Title",
+  "caseTitle": "Descriptive Case Title (3-8 words, specific)",
+  "categoryBadge": "Category badge e.g. PENSION / ADMINISTRATIVE",
   "situationSummary": "Plain language summary of situation",
-  "userGoal": "Primary citizen objective",
+  "userGoal": "Derived primary citizen objective",
   "whatCivicFlowFound": "Civic, legal or practical context explained simply",
-  "rightsAndConsiderations": ["Right/consideration 1", "Right/consideration 2"],
+  "rightsAndConsiderations": ["Case-specific right/consideration 1", "Case-specific right/consideration 2"],
   "options": [
     {
       "id": "opt1",
-      "title": "Option Title",
+      "title": "Specific Option Title",
       "description": "Details of option",
       "considerations": ["Key consideration 1"]
     }
@@ -212,18 +216,18 @@ Return ONLY JSON matching schema:
     }
   ],
   "responsibleAuthority": {
-    "name": "Exact Official Authority Name or null",
-    "type": "Public Authority | Private Entity | Municipal | Regulator | Service Provider",
-    "relevance": "Why responsible",
-    "actionableInfo": "How to contact or submit",
+    "name": "Exact Official Authority Name (e.g. Pension Disbursing Bank / CPPC, District Revenue Office, Municipal Electrical Ward Office) or null",
+    "type": "Public Authority | Statutory Body | Municipal | Regulator | Educational Body | Private Entity",
+    "relevance": "Why responsible for this issue",
+    "actionableInfo": "How to contact or submit grievance",
     "officialLink": "https://official-domain.gov.in or omit if unverified",
     "confidence": "high" | "medium" | "low"
   },
   "sources": [
-    { "id": "s1", "title": "Official Source Name", "url": "https://...", "relevance": "Why relevant" }
+    { "id": "s1", "title": "Official Source / Portal Name", "url": "https://...", "relevance": "Why relevant" }
   ],
   "suggestedDocuments": [
-    { "id": "doc_1", "documentType": "security_deposit_refund_demand", "title": "Security Deposit Refund Demand Letter", "reason": "Useful for formally requesting repayment", "recommended": true }
+    { "id": "doc_1", "documentType": "representation | rti | complaint | demand_notice", "title": "Specific Document Title", "reason": "Why useful for this case", "recommended": true }
   ],
   "limitations": ["CivicFlow provides civic and legal navigation information and does not replace qualified legal counsel."],
   "confidence": "high" | "medium" | "low"
