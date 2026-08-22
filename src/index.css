@@ -4,26 +4,19 @@
 
 @layer base {
   :root {
-    --color-primary: #4338CA;
-    --color-primary-blue: #2563EB;
-    --color-teal: #0D9488;
-    --color-accent: #D97706;
+    --color-primary: #7C3AED;
+    --color-secondary: #8B5CF6;
+    --color-deep-violet: #581C87;
 
-    --color-bg: #F8FAFC;
-    --color-bg-secondary: #F1F5F9;
+    --color-bg: #FCFAFF;
+    --color-bg-ambient: #F3EEFF;
+    --color-soft-lilac: #E9DFFC;
+    --color-soft-purple: #E9D5FF;
+    --color-border-lavender: #D8B4FE;
 
-    --color-soft-indigo: #EEF2FF;
-    --color-soft-blue: #EFF6FF;
-    --color-soft-teal: #F0FDFA;
-    --color-soft-amber: #FFFBEB;
-
-    --color-card: #FFFFFF;
-
-    --color-text: #111827;
-    --color-text-body: #1E293B;
-    --color-text-secondary: #64748B;
-
-    --color-border: #E2E8F0;
+    --color-text: #0F172A;
+    --color-text-body: #475569;
+    --color-text-muted: #64748B;
 
     --color-success: #059669;
     --color-warning: #D97706;
@@ -31,23 +24,100 @@
   }
 
   body {
-    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 55%, #EEF2FF 100%);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(233, 223, 252, 0.65), transparent 32%),
+      radial-gradient(circle at 85% 20%, rgba(243, 238, 255, 0.8), transparent 35%),
+      linear-gradient(180deg, #FFFFFF 0%, #FCFAFF 45%, #F8F5FF 100%);
     min-height: 100vh;
-    @apply text-slate-800 font-sans antialiased selection:bg-indigo-600 selection:text-white;
+    @apply text-slate-800 font-sans antialiased selection:bg-purple-600 selection:text-white;
   }
 }
 
-/* Glassmorphism & Micro Utilities */
-.glass-card {
-  @apply bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-xl;
+/* Editorial & Component Layer */
+.font-editorial {
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
-.glow-brand {
-  box-shadow: 0 0 35px -5px rgba(67, 56, 202, 0.2);
+.lavender-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(216, 180, 254, 0.5);
+  border-radius: 24px;
+  box-shadow: 0 12px 35px rgba(88, 28, 135, 0.045);
 }
 
-.glow-emerald {
-  box-shadow: 0 0 35px -5px rgba(13, 148, 136, 0.2);
+.lavender-card-interactive {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(216, 180, 254, 0.5);
+  border-radius: 24px;
+  box-shadow: 0 12px 35px rgba(88, 28, 135, 0.045);
+  transition: all 0.2s ease-in-out;
+}
+
+.lavender-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.55);
+  box-shadow: 0 18px 45px rgba(88, 28, 135, 0.075);
+}
+
+.glass-navbar {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(216, 180, 254, 0.45);
+  box-shadow: 0 4px 20px rgba(88, 28, 135, 0.03);
+}
+
+.btn-royal-primary {
+  background: linear-gradient(135deg, #7C3AED, #8B5CF6);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-royal-primary:hover {
+  background: linear-gradient(135deg, #6D28D9, #7C3AED);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+
+.btn-lavender-secondary {
+  background: #FAF8FF;
+  border: 1px solid #E9D5FF;
+  color: #6D28D9;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-lavender-secondary:hover {
+  background: #F3EEFF;
+  border-color: #D8B4FE;
+  color: #581C87;
+}
+
+/* Ambient Floating Decorative Orbs */
+.bg-ambient-orb-1 {
+  position: absolute;
+  top: 5%;
+  left: 10%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 213, 255, 0.6) 0%, rgba(243, 238, 255, 0) 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-ambient-orb-2 {
+  position: absolute;
+  top: 25%;
+  right: 10%;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216, 180, 254, 0.5) 0%, rgba(243, 238, 255, 0) 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Custom Scrollbar */
@@ -57,11 +127,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-100;
+  background: #F3EEFF;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition;
+  background: #D8B4FE;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C084FC;
 }
 
 /* Print Optimization for RTI Draft */

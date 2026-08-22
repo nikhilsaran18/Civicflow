@@ -138,21 +138,21 @@ Signature of Applicant (${applicantName || 'Applicant'})
 
       {/* Header */}
       <div className="space-y-2 text-center max-w-2xl mx-auto print:hidden">
-        <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-xs font-semibold border border-amber-300 dark:border-amber-800">
-          <FileText className="w-4 h-4" />
+        <div className="inline-flex items-center space-x-1.5 px-4 py-1 rounded-full bg-purple-100/80 text-purple-900 text-xs font-extrabold border border-purple-200 shadow-2xs">
+          <FileText className="w-4 h-4 text-purple-600" />
           <span>Structured RTI Application Generator</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">{t('rti.title')}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{t('rti.subtitle')}</p>
+        <h1 className="text-3xl font-extrabold text-slate-900 font-editorial">{t('rti.title')}</h1>
+        <p className="text-sm text-slate-600 font-medium">{t('rti.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
         {/* Form Inputs */}
-        <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 print:hidden">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Applicant & Department Details</h2>
+        <div className="lavender-card p-6 sm:p-8 space-y-4 print:hidden shadow-2xs">
+          <h2 className="text-lg font-bold text-slate-900 font-editorial">Applicant & Department Details</h2>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
               {t('rti.applicantName')}
             </label>
             <input
@@ -160,12 +160,12 @@ Signature of Applicant (${applicantName || 'Applicant'})
               value={applicantName}
               onChange={e => setApplicantName(e.target.value)}
               placeholder="e.g. Arun Kumar"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
               {t('rti.applicantAddress')}
             </label>
             <textarea
@@ -173,13 +173,13 @@ Signature of Applicant (${applicantName || 'Applicant'})
               value={address}
               onChange={e => setAddress(e.target.value)}
               placeholder="Full postal address for reply"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
                 {t('rti.publicAuthority')}
               </label>
               <input
@@ -187,11 +187,11 @@ Signature of Applicant (${applicantName || 'Applicant'})
                 value={authority}
                 onChange={e => setPublicAuthority(e.target.value)}
                 placeholder="e.g. Municipal Corporation"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
                 {t('rti.department')}
               </label>
               <input
@@ -199,13 +199,13 @@ Signature of Applicant (${applicantName || 'Applicant'})
                 value={department}
                 onChange={e => setDepartment(e.target.value)}
                 placeholder="e.g. Electrical Division"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+            <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
               {t('rti.informationRequested')}
             </label>
             <textarea
@@ -213,30 +213,30 @@ Signature of Applicant (${applicantName || 'Applicant'})
               value={infoRequested}
               onChange={e => setInfoRequested(e.target.value)}
               placeholder="Specify the exact public records or information needed"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
                 {t('rti.periodYears')}
               </label>
               <input
                 type="text"
                 value={period}
                 onChange={e => setPeriod(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
                 {t('rti.format')}
               </label>
               <select
                 value={format}
                 onChange={e => setFormat(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs font-medium"
               >
                 <option value="Hard Copies">Certified Hard Copies</option>
                 <option value="Inspection">Record Inspection</option>
@@ -251,16 +251,16 @@ Signature of Applicant (${applicantName || 'Applicant'})
               id="bpl"
               checked={isBPL}
               onChange={e => setIsBPL(e.target.checked)}
-              className="rounded text-indigo-600"
+              className="rounded text-purple-700 focus:ring-purple-500"
             />
-            <label htmlFor="bpl" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label htmlFor="bpl" className="text-xs font-extrabold text-slate-700">
               Claim Below Poverty Line (BPL) Fee Waiver
             </label>
           </div>
 
           {isBPL && (
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
                 BPL Ration Card Number
               </label>
               <input
@@ -268,37 +268,37 @@ Signature of Applicant (${applicantName || 'Applicant'})
                 value={bplCardNo}
                 onChange={e => setBplCardNo(e.target.value)}
                 placeholder="BPL-1029384"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200/90 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
               />
             </div>
           )}
         </div>
 
         {/* Generated Preview Card */}
-        <div className="bg-slate-900 text-slate-100 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl space-y-4 flex flex-col justify-between print:bg-white print:text-black print:p-0 print:border-none">
+        <div className="bg-slate-950 text-slate-100 p-6 sm:p-8 rounded-3xl border border-purple-900/40 shadow-2xl space-y-4 flex flex-col justify-between print:bg-white print:text-black print:p-0 print:border-none">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 print:hidden">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+            <div className="flex items-center justify-between border-b border-purple-900/50 pb-3 print:hidden">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-purple-300">
                 {t('rti.previewTitle')}
               </span>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleCopy}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center space-x-1 border border-slate-700"
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-purple-200 flex items-center space-x-1 border border-purple-800/60"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{t('rti.copy')}</span>
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center space-x-1 shadow-sm"
+                  className="px-3.5 py-1.5 btn-royal-primary text-xs font-extrabold text-white flex items-center space-x-1 rounded-xl shadow-sm"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>{t('rti.print')}</span>
                 </button>
                 <button
                   onClick={handleDownloadTxt}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center space-x-1 border border-slate-700"
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-purple-200 flex items-center space-x-1 border border-purple-800/60"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Text</span>
@@ -311,7 +311,7 @@ Signature of Applicant (${applicantName || 'Applicant'})
             </pre>
           </div>
 
-          <div className="p-3 bg-slate-800/80 rounded-xl text-[11px] text-slate-400 border border-slate-700/60 print:hidden">
+          <div className="p-3 bg-slate-900/90 rounded-xl text-[11px] text-slate-400 border border-purple-900/50 print:hidden">
             Notice: Please verify exact CPIO postal address and state-specific fee rules before dispatching via Registered AD.
           </div>
         </div>
@@ -319,4 +319,5 @@ Signature of Applicant (${applicantName || 'Applicant'})
     </div>
   );
 };
+
 

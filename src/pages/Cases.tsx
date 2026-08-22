@@ -53,17 +53,17 @@ export const Cases: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-6">
         <div>
-          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Citizen Dashboard</span>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('navMyCases')}</h1>
+          <span className="text-xs font-extrabold text-purple-700 uppercase tracking-wider">Citizen Dashboard</span>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight font-editorial">{t('navMyCases')}</h1>
         </div>
 
         <div className="flex items-center gap-3">
           {cases.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all"
+              className="px-3.5 py-2.5 btn-lavender-secondary font-bold text-xs rounded-xl transition-all"
             >
               {t('clearAllCases')}
             </button>
@@ -71,7 +71,7 @@ export const Cases: React.FC = () => {
 
           <Link
             to="/case/new"
-            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2"
+            className="px-5 py-3 btn-royal-primary font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center gap-2"
           >
             <PlusCircle className="w-4 h-4" />
             <span>{t('startNewCase')}</span>
@@ -80,15 +80,15 @@ export const Cases: React.FC = () => {
       </div>
 
       {/* Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 lavender-card p-4 shadow-2xs">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Search cases or keywords..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-4 py-2 bg-white border border-purple-200/90 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
 
@@ -97,10 +97,10 @@ export const Cases: React.FC = () => {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold capitalize transition-all ${
                 statusFilter === st
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-purple-900 text-white shadow-xs'
+                  : 'bg-purple-50/70 text-slate-700 hover:bg-purple-100/80 hover:text-purple-900'
               }`}
             >
               {st === 'all' ? 'All' : st === 'action_required' ? t('statusActionRequired') : st === 'analysing' ? t('statusAnalysing') : st === 'waiting' ? t('statusWaiting') : t('statusResolved')}
@@ -111,15 +111,15 @@ export const Cases: React.FC = () => {
 
       {/* Case Cards Grid */}
       {filteredCases.length === 0 ? (
-        <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-4">
-          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-lg font-bold text-slate-800">No cases match your filter</h3>
+        <div className="lavender-card p-12 text-center space-y-4 shadow-2xs">
+          <FolderOpen className="w-12 h-12 text-purple-300 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-800 font-editorial">No cases match your filter</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Describe a new civic or legal problem to start tracking action steps and generating documents.
           </p>
           <button
             onClick={() => navigate('/case/new')}
-            className="px-4 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl"
+            className="px-4 py-2.5 btn-royal-primary font-bold text-xs rounded-xl"
           >
             {t('startNewCase')}
           </button>
@@ -130,31 +130,31 @@ export const Cases: React.FC = () => {
             <div
               key={c.id}
               onClick={() => navigate(`/case/${c.id}`)}
-              className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-4 group"
+              className="lavender-card-interactive p-6 space-y-4 cursor-pointer group"
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="text-[10px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200 truncate uppercase">
+                <span className="text-[10px] font-extrabold text-purple-900 bg-purple-100 px-2.5 py-1 rounded-full border border-purple-200 truncate uppercase">
                   🏷️ {c.categoryBadge || c.solution?.categoryBadge || c.understanding?.categoryBadge || 'CIVIC MATTER'}
                 </span>
                 {getStatusBadge(c.status)}
               </div>
 
               <div className="space-y-1">
-                <h3 className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors line-clamp-1">
+                <h3 className="font-extrabold text-slate-900 text-base group-hover:text-purple-700 transition-colors line-clamp-1 font-editorial">
                   {c.title}
                 </h3>
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
                   "{c.originalProblem}"
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+              <div className="pt-3 border-t border-purple-100 flex items-center justify-between text-xs text-slate-400">
+                <span className="flex items-center gap-1 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-purple-400" />
                   {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
 
-                <span className="font-bold text-indigo-600 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                <span className="font-extrabold text-purple-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                   {t('viewPlan')} <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </div>
@@ -164,5 +164,5 @@ export const Cases: React.FC = () => {
       )}
     </div>
   );
-
 };
+

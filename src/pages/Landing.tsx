@@ -48,52 +48,52 @@ export const Landing: React.FC = () => {
   };
 
   return (
-    <div className="space-y-20 pb-20">
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 bg-gradient-to-b from-indigo-900 via-indigo-950 to-slate-900 text-white">
-        {/* Background glow graphics */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/3 right-10 w-[300px] h-[200px] bg-teal-400/15 blur-[100px] rounded-full pointer-events-none" />
+    <div className="space-y-20 pb-20 relative overflow-hidden">
+      {/* Decorative Non-Interactive Ambient Floating Spheres */}
+      <div className="bg-ambient-orb-1" aria-hidden="true" />
+      <div className="bg-ambient-orb-2" aria-hidden="true" />
 
+      {/* HERO SECTION */}
+      <section className="relative overflow-hidden pt-12 pb-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-8 relative z-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-teal-300" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100/80 border border-purple-200/80 text-purple-900 text-xs font-extrabold shadow-2xs">
+            <Sparkles className="w-4 h-4 text-purple-600" />
             <span>Open-Ended AI Civic & Legal Empowerment Engine</span>
           </div>
 
-          {/* Main Title */}
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white max-w-4xl mx-auto">
+          {/* Main Title with Editorial Serif */}
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-slate-900 font-editorial max-w-4xl mx-auto">
             {t('heroTitle')}
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto font-normal leading-relaxed">
             {t('heroSubtitle')}
           </p>
 
           {/* Large Problem Input Box */}
-          <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-3 sm:p-4 rounded-2xl border border-white/20 shadow-2xl space-y-3">
+          <div className="max-w-3xl mx-auto lavender-card p-3 sm:p-5 shadow-[0_24px_70px_rgba(88,28,135,0.08)] space-y-3">
             <div className="relative">
               <textarea
                 value={problemInput}
                 onChange={e => setProblemInput(e.target.value)}
                 placeholder={EXAMPLE_PROMPTS[placeholderIndex]}
                 rows={3}
-                className="w-full bg-slate-900/80 text-white placeholder-slate-400 rounded-xl p-4 text-base focus:outline-none focus:ring-2 focus:ring-teal-400 border border-slate-700/80 resize-none shadow-inner"
+                className="w-full bg-white text-slate-900 placeholder-slate-400 rounded-2xl p-4 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 border border-purple-200/90 resize-none shadow-xs"
               />
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 text-purple-600" />
                 No legal terminology needed • Dynamic AI reasoning
               </span>
 
               <button
                 onClick={() => handleStartCase()}
                 disabled={!problemInput.trim()}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-bold text-sm hover:from-teal-300 hover:to-emerald-400 transition-all shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="w-full sm:w-auto px-6 py-3.5 btn-royal-primary text-sm font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 <span>{t('findNextStep')}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -103,7 +103,7 @@ export const Landing: React.FC = () => {
 
           {/* Interactive Trigger Example Chips */}
           <div className="space-y-3 pt-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="text-xs font-extrabold uppercase tracking-wider text-purple-900/70">
               {t('tryExample')} (Click to test live):
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto">
@@ -111,7 +111,7 @@ export const Landing: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => handleStartCase(prompt)}
-                  className="text-xs bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white px-3 py-1.5 rounded-lg border border-white/15 transition-all text-left truncate max-w-[280px]"
+                  className="text-xs bg-purple-50/80 hover:bg-purple-100/90 text-purple-950 px-3.5 py-1.5 rounded-xl border border-purple-200/80 font-bold transition-all text-left truncate max-w-[280px] shadow-2xs"
                   title={prompt}
                 >
                   💡 "{prompt}"
@@ -124,22 +124,21 @@ export const Landing: React.FC = () => {
 
       {/* TRUST STATEMENT SECTION */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 text-center space-y-6">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 shadow-xl shadow-slate-200/50 space-y-6 relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo-50 rounded-full blur-2xl pointer-events-none" />
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+        <div className="lavender-card p-8 sm:p-12 space-y-6 relative overflow-hidden shadow-[0_20px_60px_rgba(88,28,135,0.06)]">
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-editorial">
             {t('trustTitle')}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {['The law', 'The department', 'The form', 'The legal category'].map((item, i) => (
               <div
                 key={i}
-                className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl text-center font-bold text-slate-700 text-sm shadow-sm"
+                className="bg-purple-50/60 border border-purple-200/60 p-4 rounded-2xl text-center font-bold text-slate-800 text-sm shadow-2xs"
               >
                 ✕ {item}
               </div>
             ))}
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-indigo-600 tracking-tight">
+          <p className="text-2xl sm:text-3xl font-extrabold text-purple-700 tracking-tight font-editorial">
             "{t('trustSubtitle')}"
           </p>
         </div>
@@ -148,38 +147,38 @@ export const Landing: React.FC = () => {
       {/* 4-STEP HOW IT WORKS */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('howItWorksTitle')}</h2>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight font-editorial">{t('howItWorksTitle')}</h2>
           <p className="text-slate-600 text-sm">Four simple steps from describing a problem to taking real legal action.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
-              1
+          <div className="lavender-card-interactive p-6 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-extrabold text-lg font-editorial shadow-2xs">
+              01
             </div>
             <h3 className="font-bold text-slate-900 text-base">{t('step1Title')}</h3>
             <p className="text-xs text-slate-600 leading-relaxed">{t('step1Desc')}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg">
-              2
+          <div className="lavender-card-interactive p-6 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-extrabold text-lg font-editorial shadow-2xs">
+              02
             </div>
             <h3 className="font-bold text-slate-900 text-base">{t('step2Title')}</h3>
             <p className="text-xs text-slate-600 leading-relaxed">{t('step2Desc')}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg">
-              3
+          <div className="lavender-card-interactive p-6 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-extrabold text-lg font-editorial shadow-2xs">
+              03
             </div>
             <h3 className="font-bold text-slate-900 text-base">{t('step3Title')}</h3>
             <p className="text-xs text-slate-600 leading-relaxed">{t('step3Desc')}</p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-              4
+          <div className="lavender-card-interactive p-6 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-extrabold text-lg font-editorial shadow-2xs">
+              04
             </div>
             <h3 className="font-bold text-slate-900 text-base">{t('step4Title')}</h3>
             <p className="text-xs text-slate-600 leading-relaxed">{t('step4Desc')}</p>
@@ -190,50 +189,50 @@ export const Landing: React.FC = () => {
       {/* WHY CIVICFLOW IS DIFFERENT */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-extrabold text-slate-900">Why CivicFlow AI is Different</h2>
+          <h2 className="text-3xl font-extrabold text-slate-900 font-editorial">Why CivicFlow AI is Different</h2>
           <p className="text-slate-600 text-sm">No fixed categories. No hardcoded questionnaires. Pure case intelligence.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Old Way */}
-          <div className="bg-rose-50/50 border border-rose-200/80 rounded-2xl p-6 space-y-4">
-            <div className="flex items-center gap-2 text-rose-700 font-bold text-base">
-              <AlertCircle className="w-5 h-5" />
+          <div className="bg-rose-50/70 border border-rose-200/90 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-2 text-rose-800 font-extrabold text-base">
+              <AlertCircle className="w-5 h-5 text-rose-600" />
               <span>Old Civic Bots / Fixed Systems</span>
             </div>
-            <ul className="space-y-3 text-xs text-rose-900">
+            <ul className="space-y-3 text-xs text-rose-950 font-medium">
               <li className="flex items-start gap-2">
-                <span className="font-bold">✕</span>
+                <span className="font-bold text-rose-600">✕</span>
                 <span>Forces user to select legal domain upfront (Consumer, Tenant, Workplace).</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold">✕</span>
+                <span className="font-bold text-rose-600">✕</span>
                 <span>Asks generic canned questions (e.g. asking for "receipt" on a street light complaint!).</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold">✕</span>
+                <span className="font-bold text-rose-600">✕</span>
                 <span>Fails completely on novel or ambiguous citizen problems.</span>
               </li>
             </ul>
           </div>
 
           {/* CivicFlow Way */}
-          <div className="bg-emerald-50/50 border border-emerald-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <div className="lavender-card p-6 sm:p-8 space-y-4 shadow-md border-purple-300/80">
+            <div className="flex items-center gap-2 text-purple-900 font-extrabold text-base">
+              <CheckCircle2 className="w-5 h-5 text-purple-600" />
               <span>CivicFlow AI Engine</span>
             </div>
-            <ul className="space-y-3 text-xs text-emerald-950">
+            <ul className="space-y-3 text-xs text-slate-800 font-medium">
               <li className="flex items-start gap-2">
-                <span className="font-bold text-emerald-600">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Understands the citizen narrative first in natural language.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-emerald-600">✓</span>
-                <span>Generates 1–4 high-value missing questions evaluated by 2-pass Question Validator.</span>
+                <span className="font-bold text-purple-600">✓</span>
+                <span>Generates high-value missing questions evaluated by Evidence Sufficiency.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-emerald-600">✓</span>
+                <span className="font-bold text-purple-600">✓</span>
                 <span>Generates case-specific Action Plan and editable Action Studio document drafts.</span>
               </li>
             </ul>
@@ -242,29 +241,29 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* SIMPLE-LANGUAGE TRANSLATOR DEMO SECTION */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 bg-slate-900 text-white rounded-3xl p-8 border border-slate-800 space-y-6 shadow-xl">
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 bg-slate-950 text-white rounded-3xl p-8 border border-purple-900/40 space-y-6 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-xl">
+          <div className="p-2.5 bg-purple-900/50 text-purple-300 rounded-xl border border-purple-700/40">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-white">Interactive Feature: "Explain Simply"</h3>
+            <h3 className="font-bold text-lg text-white font-editorial">Interactive Feature: "Explain Simply"</h3>
             <p className="text-xs text-slate-400">Translate complex bureaucratic jargon into citizen-friendly language.</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Paste Bureaucratic Text:</label>
+          <label className="text-xs font-extrabold text-purple-200 uppercase tracking-wider">Paste Bureaucratic Text:</label>
           <textarea
             value={bureaucraticInput}
             onChange={e => setBureaucraticInput(e.target.value)}
             rows={2}
-            className="w-full bg-slate-800 text-white p-3 rounded-xl text-sm border border-slate-700 focus:outline-none focus:border-teal-400"
+            className="w-full bg-slate-900 text-white p-3.5 rounded-xl text-sm border border-purple-800/60 focus:outline-none focus:border-purple-500 shadow-inner"
           />
           <button
             onClick={handleTranslateDemo}
             disabled={translating}
-            className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+            className="px-5 py-2.5 btn-royal-primary font-bold text-xs rounded-xl transition-all flex items-center gap-1.5"
           >
             {translating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
             <span>Explain Simply</span>
@@ -272,12 +271,12 @@ export const Landing: React.FC = () => {
         </div>
 
         {translationResult && (
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 space-y-2 animate-fadeIn">
-            <h4 className="text-xs font-bold text-teal-300 uppercase tracking-wider">Simple Explanation:</h4>
+          <div className="bg-slate-900/90 p-4 rounded-2xl border border-purple-800/50 space-y-2 animate-fadeIn">
+            <h4 className="text-xs font-extrabold text-purple-300 uppercase tracking-wider">Simple Explanation:</h4>
             <p className="text-sm font-medium text-slate-100">{translationResult.simpleExplanation}</p>
             {translationResult.keyTakeaways.length > 0 && (
-              <div className="pt-2 border-t border-slate-700/60">
-                <span className="text-xs font-semibold text-slate-400">Key Takeaways:</span>
+              <div className="pt-2 border-t border-purple-900/50">
+                <span className="text-xs font-bold text-slate-400">Key Takeaways:</span>
                 <ul className="list-disc list-inside text-xs text-slate-300 space-y-1 mt-1">
                   {translationResult.keyTakeaways.map((item, idx) => (
                     <li key={idx}>{item}</li>
@@ -291,14 +290,14 @@ export const Landing: React.FC = () => {
 
       {/* CTA SECTION */}
       <section className="max-w-4xl mx-auto px-4 text-center space-y-6">
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-3xl p-10 shadow-xl space-y-4">
-          <h2 className="text-3xl font-extrabold">Ready to resolve your civic or legal issue?</h2>
-          <p className="text-indigo-100 text-sm max-w-xl mx-auto">
+        <div className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 text-white rounded-3xl p-10 shadow-2xl space-y-4 border border-purple-500/30">
+          <h2 className="text-3xl font-extrabold font-editorial">Ready to resolve your civic or legal issue?</h2>
+          <p className="text-purple-100 text-sm max-w-xl mx-auto font-medium">
             No registration required to try a case. Get immediate clarity and an action plan in minutes.
           </p>
           <button
             onClick={() => navigate('/case/new')}
-            className="px-8 py-4 bg-white text-indigo-900 font-extrabold text-sm rounded-xl hover:bg-indigo-50 shadow-lg transition-all"
+            className="px-8 py-4 bg-white text-purple-950 font-extrabold text-sm rounded-xl hover:bg-purple-50 shadow-xl transition-all hover:scale-105"
           >
             Start Your Case Now
           </button>
@@ -307,3 +306,4 @@ export const Landing: React.FC = () => {
     </div>
   );
 };
+

@@ -90,10 +90,10 @@ export const CaseDetail: React.FC = () => {
       )}
 
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="bg-gradient-to-r from-slate-950 via-purple-950 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4 border border-purple-800/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-purple-900/50 pb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-indigo-500/20 text-indigo-300 text-xs font-extrabold px-3 py-1 rounded-full border border-indigo-400/30">
+            <span className="bg-purple-900/60 text-purple-200 text-xs font-extrabold px-3 py-1 rounded-full border border-purple-700/60">
               📌 {civicCase.title || understanding.caseTitle}
             </span>
             <span className="text-xs text-slate-400">
@@ -104,7 +104,7 @@ export const CaseDetail: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowCaseFileModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-xs rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 btn-royal-primary text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-1.5"
             >
               <FileText className="w-4 h-4" />
               <span>Generate Case File</span>
@@ -117,7 +117,7 @@ export const CaseDetail: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-editorial">
             {civicCase.title}
           </h1>
           <p className="text-sm text-slate-300">
@@ -127,19 +127,19 @@ export const CaseDetail: React.FC = () => {
       </div>
 
       {/* SECTION 1 — YOUR SITUATION */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-          <FileText className="w-5 h-5" />
+      <section className="lavender-card p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
+          <FileText className="w-5 h-5 text-purple-700" />
           <h2>{t('situationTitle')}</h2>
         </div>
-        <p className="text-slate-800 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">
+        <p className="text-slate-800 text-sm leading-relaxed bg-purple-50/40 p-4 rounded-2xl border border-purple-100 font-medium">
           {solution.situationSummary || understanding.situationSummary}
         </p>
       </section>
 
       {/* SECTION 2 — CONFIRMED FACTS & CLARIFICATION Q&A */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
-        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
+      <section className="lavender-card p-6 sm:p-8 space-y-6">
+        <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
           <CheckCircle className="w-5 h-5 text-emerald-600" />
           <h2>2. Confirmed Facts & Clarification Answers</h2>
         </div>
@@ -147,37 +147,37 @@ export const CaseDetail: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Confirmed Facts List */}
           <div className="space-y-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
               Confirmed Case Facts ({understanding.confirmedFacts?.length || 0})
             </span>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {understanding.confirmedFacts.map((fact, idx) => (
-                <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-800">
+                <div key={idx} className="bg-purple-50/40 p-3 rounded-xl border border-purple-100 text-xs text-slate-800 font-medium">
                   <span className="font-bold text-emerald-700">✓ Fact:</span> {fact.fact}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Sequential 3 Clarification Questions & Answers */}
+          {/* Sequential Clarification Questions & Answers */}
           <div className="space-y-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
               AI Clarification Record ({qAndA ? qAndA.length : 0} Questions)
             </span>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {qAndA && qAndA.length > 0 ? (
                 qAndA.map((item, idx) => (
-                  <div key={idx} className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-xs space-y-1">
-                    <div className="font-bold text-indigo-900">
+                  <div key={idx} className="bg-purple-50/60 p-3 rounded-xl border border-purple-200/60 text-xs space-y-1">
+                    <div className="font-bold text-purple-900">
                       Q{item.questionNumber}: {item.question.question}
                     </div>
-                    <div className="text-slate-700">
-                      Answer: <span className="font-bold text-slate-900">{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
+                    <div className="text-slate-700 font-medium">
+                      Answer: <span className="font-extrabold text-purple-950">{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-slate-500 italic p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-500 italic p-3 bg-purple-50/30 rounded-xl border border-purple-100">
                   No clarification questions required for this initial statement.
                 </div>
               )}
@@ -187,21 +187,21 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 3 — WHAT CIVICFLOW FOUND */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-          <Sparkles className="w-5 h-5" />
+      <section className="lavender-card p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
+          <Sparkles className="w-5 h-5 text-purple-700" />
           <h2>{t('whatCivicFlowFoundTitle')}</h2>
         </div>
-        <p className="text-slate-700 text-sm leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/60 font-medium">
+        <p className="text-slate-800 text-sm leading-relaxed bg-purple-50/40 p-4 rounded-2xl border border-purple-100 font-medium">
           {solution.whatCivicFlowFound || solution.explanation}
         </p>
 
         {solution.rightsAndConsiderations && solution.rightsAndConsiderations.length > 0 && (
           <div className="space-y-2 pt-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Key Rights & Considerations:</span>
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Key Rights & Considerations:</span>
             <ul className="space-y-1.5">
               {solution.rightsAndConsiderations.map((r, i) => (
-                <li key={i} className="text-xs text-indigo-900 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100 font-semibold flex items-center gap-2">
+                <li key={i} className="text-xs text-purple-950 bg-purple-50/70 p-3 rounded-xl border border-purple-200/70 font-semibold flex items-center gap-2">
                   <span>⚖️</span>
                   <span>{r}</span>
                 </li>
@@ -212,21 +212,21 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 4 — YOUR OPTIONS */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
-        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-          <ShieldCheck className="w-5 h-5" />
+      <section className="lavender-card p-6 sm:p-8 space-y-6">
+        <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
+          <ShieldCheck className="w-5 h-5 text-purple-700" />
           <h2>{t('yourOptionsTitle')}</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {solution.options.map((opt, idx) => (
-            <div key={idx} className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <div key={idx} className="bg-purple-50/30 p-5 rounded-2xl border border-purple-200/70 space-y-3">
               <h3 className="font-bold text-slate-900 text-base">{opt.title}</h3>
               <p className="text-xs text-slate-600 leading-relaxed">{opt.description}</p>
               {opt.considerations && opt.considerations.length > 0 && (
-                <div className="pt-2 border-t border-slate-200/80">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Key Considerations:</span>
-                  <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 mt-1">
+                <div className="pt-2 border-t border-purple-200/60">
+                  <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Key Considerations:</span>
+                  <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 mt-1 font-medium">
                     {opt.considerations.map((c, i) => (
                       <li key={i}>{c}</li>
                     ))}
@@ -239,56 +239,56 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 5 — RECOMMENDED NEXT STEP */}
-      <section className="bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 p-6 sm:p-8 rounded-3xl shadow-lg space-y-3">
-        <div className="flex items-center gap-2 font-black uppercase tracking-wider text-xs bg-slate-950/20 text-slate-950 px-3 py-1 rounded-full w-fit">
+      <section className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-3 border border-purple-500/30">
+        <div className="flex items-center gap-2 font-black uppercase tracking-wider text-xs bg-white/20 text-white px-3 py-1 rounded-full w-fit">
           ⭐ {t('recommendedNextStepTitle')}
         </div>
-        <h3 className="text-xl sm:text-2xl font-extrabold">{solution.recommendedNextStep.title}</h3>
-        <p className="text-sm font-medium leading-relaxed max-w-3xl">
+        <h3 className="text-xl sm:text-2xl font-extrabold font-editorial">{solution.recommendedNextStep.title}</h3>
+        <p className="text-sm font-medium leading-relaxed max-w-3xl text-purple-100">
           {solution.recommendedNextStep.explanation}
         </p>
       </section>
 
-      {/* SECTION 6 — YOUR DYNAMIC ACTION PLAN (INTERACTIVE STATUS TIMELINE) */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg">
-            <Clock className="w-5 h-5" />
+      {/* SECTION 6 — YOUR DYNAMIC ACTION PLAN */}
+      <section className="lavender-card p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+          <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg font-editorial">
+            <Clock className="w-5 h-5 text-purple-700" />
             <h2>{t('yourActionPlanTitle')}</h2>
           </div>
           <span className="text-xs text-slate-400 font-medium">Click step badge to change status</span>
         </div>
 
-        <div className="space-y-6 relative pl-6 border-l-2 border-indigo-100 ml-4">
+        <div className="space-y-6 relative pl-6 border-l-2 border-purple-200 ml-4">
           {solution.actionPlan.map((step) => (
             <div key={step.order} className="relative space-y-3 group">
               {/* Interactive Timeline marker node */}
               <button
                 onClick={() => handleStepStatusToggle(step.order)}
-                className={`absolute -left-[35px] top-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
+                className={`absolute -left-[35px] top-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold transition-all shadow-sm ${
                   step.status === 'completed'
                     ? 'bg-emerald-500 text-white ring-4 ring-emerald-100'
                     : step.status === 'in_progress'
-                    ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 animate-pulse'
-                    : 'bg-slate-200 text-slate-700 hover:bg-indigo-100'
+                    ? 'bg-purple-700 text-white ring-4 ring-purple-100 animate-pulse'
+                    : 'bg-slate-200 text-slate-700 hover:bg-purple-100'
                 }`}
                 title="Click to toggle status"
               >
                 {step.status === 'completed' ? '✓' : step.order}
               </button>
 
-              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+              <div className="bg-purple-50/30 p-5 rounded-2xl border border-purple-200/70 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-bold text-slate-900 text-base">
                     Step {step.order}: {step.title}
                   </h3>
                   <button
                     onClick={() => handleStepStatusToggle(step.order)}
-                    className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
+                    className={`text-xs font-extrabold px-3 py-1 rounded-full border transition-all ${
                       step.status === 'completed'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : step.status === 'in_progress'
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        ? 'bg-purple-100 text-purple-900 border-purple-200'
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}
                   >
@@ -300,20 +300,20 @@ export const CaseDetail: React.FC = () => {
                   </button>
                 </div>
 
-                <p className="text-xs text-slate-700 leading-relaxed">{step.description}</p>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">{step.description}</p>
 
                 {step.whyItMatters && (
-                  <p className="text-xs text-indigo-900 bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100/80 font-medium">
+                  <p className="text-xs text-purple-950 bg-purple-50/80 p-2.5 rounded-xl border border-purple-200/80 font-medium">
                     💡 <span className="font-bold">Why this step matters:</span> {step.whyItMatters}
                   </p>
                 )}
 
                 {step.evidenceNeeded && step.evidenceNeeded.length > 0 && (
                   <div className="pt-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Required Evidence / Items:</span>
+                    <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Required Evidence / Items:</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {step.evidenceNeeded.map((ev, i) => (
-                        <span key={i} className="text-xs bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 font-medium">
+                        <span key={i} className="text-xs bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-purple-200 font-medium">
                           📄 {ev}
                         </span>
                       ))}
@@ -327,33 +327,33 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 7 — RESPONSIBLE AUTHORITY */}
-      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-          <Bookmark className="w-5 h-5" />
+      <section className="lavender-card p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
+          <Bookmark className="w-5 h-5 text-purple-700" />
           <h2>{t('responsibleAuthorityTitle')}</h2>
         </div>
 
         {solution.responsibleAuthority && solution.responsibleAuthority.name ? (
-          <div className="bg-indigo-50/60 border border-indigo-200/80 p-6 rounded-2xl space-y-3">
+          <div className="bg-purple-50/60 border border-purple-200/80 p-6 rounded-2xl space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-extrabold text-slate-900 text-lg">
                 {solution.responsibleAuthority.name}
               </h3>
               {solution.responsibleAuthority.type && (
-                <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
+                <span className="text-xs font-extrabold text-purple-800 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
                   {solution.responsibleAuthority.type}
                 </span>
               )}
             </div>
 
             {solution.responsibleAuthority.relevance && (
-              <p className="text-xs text-slate-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
                 <span className="font-bold">Relevance:</span> {solution.responsibleAuthority.relevance}
               </p>
             )}
 
             {solution.responsibleAuthority.actionableInfo && (
-              <p className="text-xs text-slate-700 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
                 <span className="font-bold">How to Contact / Submit:</span> {solution.responsibleAuthority.actionableInfo}
               </p>
             )}
@@ -364,7 +364,7 @@ export const CaseDetail: React.FC = () => {
                   href={solution.responsibleAuthority.officialLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                  className="inline-flex items-center gap-1.5 text-xs font-extrabold text-purple-700 hover:text-purple-900"
                 >
                   <span>Official Portal / Information Link</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -382,24 +382,24 @@ export const CaseDetail: React.FC = () => {
 
       {/* SECTION 8 — AUTHORITATIVE SOURCES */}
       {solution.sources && solution.sources.length > 0 && (
-        <section className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
-          <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg border-b border-slate-100 pb-3">
-            <ExternalLink className="w-5 h-5" />
+        <section className="lavender-card p-6 sm:p-8 space-y-6">
+          <div className="flex items-center gap-2 text-purple-900 font-extrabold text-lg border-b border-purple-100 pb-3 font-editorial">
+            <ExternalLink className="w-5 h-5 text-purple-700" />
             <h2>{t('sourcesTitle')}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {solution.sources.map((src, idx) => (
-              <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div key={idx} className="bg-purple-50/30 p-4 rounded-2xl border border-purple-200/70 space-y-2">
                 <h4 className="font-bold text-slate-900 text-sm">{src.title}</h4>
                 {src.authority && <p className="text-xs text-slate-500">{src.authority}</p>}
-                <p className="text-xs text-slate-700">{src.relevance}</p>
+                <p className="text-xs text-slate-700 font-medium">{src.relevance}</p>
                 {src.url && (
                   <a
                     href={src.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline pt-1"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:underline pt-1"
                   >
                     <span>Visit Source Link</span>
                     <ExternalLink className="w-3 h-3" />
@@ -412,9 +412,9 @@ export const CaseDetail: React.FC = () => {
       )}
 
       {/* SECTION 9 — ACTION STUDIO (DOCUMENT GENERATION BAR) */}
-      <section className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl space-y-6 border border-slate-800">
+      <section className="bg-slate-950 text-white p-8 rounded-3xl shadow-2xl space-y-6 border border-purple-900/40">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-teal-300 font-bold text-lg">
+          <div className="flex items-center gap-2 text-purple-300 font-bold text-lg font-editorial">
             <Edit3 className="w-5 h-5" />
             <h2>{t('actionStudioTitle')}</h2>
           </div>
@@ -429,7 +429,7 @@ export const CaseDetail: React.FC = () => {
               <button
                 key={idx}
                 onClick={() => handleOpenActionStudio(doc.documentType || doc.type || 'complaint')}
-                className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-sm rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-2"
+                className="px-6 py-3.5 btn-royal-primary font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center gap-2"
               >
                 <FileText className="w-4 h-4" />
                 <span>{doc.title}</span>
@@ -439,7 +439,7 @@ export const CaseDetail: React.FC = () => {
           ) : (
             <button
               onClick={() => handleOpenActionStudio('complaint')}
-              className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 text-slate-950 font-extrabold text-sm rounded-xl hover:from-teal-300 hover:to-emerald-400 shadow-md transition-all flex items-center gap-2"
+              className="px-6 py-3.5 btn-royal-primary font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center gap-2"
             >
               <FileText className="w-4 h-4" />
               <span>Generate Formal Representation Draft</span>
@@ -447,27 +447,26 @@ export const CaseDetail: React.FC = () => {
           )}
 
           {Boolean(
-            caseData.understanding?.rtiApplicable ??
-            caseData.solution?.rtiApplicable ??
-            (caseData.understanding?.relationship === 'GOVERNMENT_PUBLIC_AUTHORITY' || caseData.understanding?.relationship === 'POLICE_LAW_ENFORCEMENT')
+            civicCase.understanding?.rtiApplicable ??
+            civicCase.solution?.rtiApplicable ??
+            (civicCase.understanding?.relationship === 'GOVERNMENT_PUBLIC_AUTHORITY' || civicCase.understanding?.relationship === 'POLICE_LAW_ENFORCEMENT')
           ) ? (
             <button
               onClick={() => handleOpenActionStudio('rti')}
-              className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-sm rounded-xl border border-teal-500/40 shadow-md transition-all flex items-center gap-2"
+              className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-purple-300 font-extrabold text-sm rounded-xl border border-purple-500/40 shadow-md transition-all flex items-center gap-2"
             >
-              <FileText className="w-4 h-4 text-teal-400" />
+              <FileText className="w-4 h-4 text-purple-400" />
               <span>{t('generateRTIFromCase')}</span>
             </button>
           ) : (
-            <div className="px-4 py-3 bg-slate-800/80 border border-slate-700 text-slate-400 text-xs font-medium rounded-xl flex items-center gap-2">
+            <div className="px-4 py-3 bg-slate-900/90 border border-purple-900/50 text-slate-400 text-xs font-medium rounded-xl flex items-center gap-2">
               <Shield className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <span>RTI Excluded (Applies to Public Authorities Only)</span>
             </div>
           )}
         </div>
       </section>
-
-
     </div>
   );
 };
+

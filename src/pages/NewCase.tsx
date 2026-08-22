@@ -306,22 +306,22 @@ export const NewCase: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-purple-200/60 pb-4">
         <div>
-          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+          <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">
             CivicFlow AI Engine (ID: {currentCaseId.slice(0, 12)})
           </span>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight font-editorial">
             Tell us what happened
           </h1>
         </div>
         {understanding && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-              Progress: <span className="text-indigo-700 font-extrabold">{progressStatus}</span>
+            <span className="text-xs font-bold text-purple-900 bg-purple-100/70 px-3 py-1 rounded-full border border-purple-200">
+              Progress: <span className="text-purple-800 font-extrabold">{progressStatus}</span>
             </span>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
-              <Sparkles className="w-4 h-4 text-teal-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-900 text-xs font-semibold">
+              <Sparkles className="w-4 h-4 text-purple-600" />
               <span>Relationship-First Reasoning Engine Active</span>
             </div>
           </div>
@@ -330,9 +330,9 @@ export const NewCase: React.FC = () => {
 
       {stage === 'input' && !hasStarted ? (
         /* STEP 1: Describe Problem Card */
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-md space-y-6">
+        <div className="max-w-3xl mx-auto lavender-card p-8 shadow-[0_24px_70px_rgba(88,28,135,0.08)] space-y-6">
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-slate-900">Describe your civic or legal issue</h2>
+            <h2 className="text-xl font-bold text-slate-900 font-editorial">Describe your civic or legal issue</h2>
             <p className="text-sm text-slate-600">
               Describe your situation in plain language. CivicFlow AI will perform relationship-first classification and ask dynamic clarification questions with predefined selectable options.
             </p>
@@ -343,14 +343,14 @@ export const NewCase: React.FC = () => {
             onChange={e => setProblemText(e.target.value)}
             rows={5}
             placeholder="e.g. My landlord is refusing to return my security deposit even though I moved out two weeks ago with no damage..."
-            className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 leading-relaxed"
+            className="w-full bg-white border border-purple-200/90 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-900 leading-relaxed shadow-2xs"
           />
 
           <div className="flex justify-end">
             <button
               onClick={() => startAnalysisWorkflow(problemText)}
               disabled={!problemText.trim() || loading}
-              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-3.5 btn-royal-primary text-sm font-extrabold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               <span>Analyze Situation</span>
@@ -363,16 +363,16 @@ export const NewCase: React.FC = () => {
           {/* LEFT 2 COLUMNS */}
           <div className="lg:col-span-2 space-y-6">
             {/* Citizen Original Statement */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+            <div className="lavender-card p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-extrabold text-purple-900/60 uppercase tracking-wider">
                   Original Statement
                 </span>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   ✓ Confirmed Fact
                 </span>
               </div>
-              <p className="text-sm font-medium text-slate-800 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 leading-relaxed">
+              <p className="text-sm font-medium text-slate-800 bg-purple-50/40 p-4 rounded-2xl border border-purple-100 leading-relaxed">
                 "{problemText}"
               </p>
             </div>
@@ -380,17 +380,17 @@ export const NewCase: React.FC = () => {
             {/* Previous Q&A History Log */}
             {qAndAHistory.length > 0 && (
               <div className="space-y-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
                   Clarification Record ({qAndAHistory.length} Answered)
                 </span>
                 <div className="space-y-3">
                   {qAndAHistory.map(item => (
-                    <div key={item.questionNumber} className="bg-white p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 shadow-xs">
-                      <div className="font-bold text-indigo-700">
+                    <div key={item.questionNumber} className="lavender-card p-4 text-xs space-y-1.5">
+                      <div className="font-bold text-purple-900">
                         Clarification Q{item.questionNumber}: {item.question.question}
                       </div>
-                      <div className="text-slate-800 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 font-medium">
-                        Selected Choice: <span className="font-bold">{item.selectedOptionLabel || (Array.isArray(item.answer) ? item.answer.join(', ') : item.answer)}</span>
+                      <div className="text-slate-800 bg-purple-50/60 p-2.5 rounded-xl border border-purple-200/60 font-medium">
+                        Selected Choice: <span className="font-extrabold text-purple-950">{item.selectedOptionLabel || (Array.isArray(item.answer) ? item.answer.join(', ') : item.answer)}</span>
                       </div>
                     </div>
                   ))}
@@ -400,36 +400,36 @@ export const NewCase: React.FC = () => {
 
             {/* AI Thinking State Notice */}
             {thinkingState && (
-              <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-2xl flex items-center gap-3 animate-pulse shadow-sm">
-                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 flex-shrink-0" />
-                <span className="text-xs font-bold">{thinkingState}</span>
+              <div className="bg-purple-50 border border-purple-200 text-purple-900 p-4 rounded-2xl flex items-center gap-3 animate-pulse shadow-2xs">
+                <RefreshCw className="w-4 h-4 animate-spin text-purple-600 flex-shrink-0" />
+                <span className="text-xs font-extrabold">{thinkingState}</span>
               </div>
             )}
 
             {/* UNLIMITED DYNAMIC CLARIFICATION QUESTION CARD */}
             {stage === 'questions' && currentQuestion && (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-indigo-100 shadow-lg space-y-5 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-600 via-teal-500 to-indigo-600" />
+              <div className="lavender-card p-6 sm:p-8 shadow-xl space-y-5 relative overflow-hidden border-purple-200">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600" />
                 
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-extrabold border border-indigo-200">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/90 text-purple-900 text-xs font-extrabold border border-purple-200">
                       <span>Clarification Question #{questionNumber}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 leading-snug pt-1">
+                    <h3 className="text-lg font-bold text-slate-900 leading-snug pt-1 font-editorial">
                       {currentQuestion.question}
                     </h3>
                   </div>
-                  <HelpCircle className="w-6 h-6 text-indigo-400 flex-shrink-0 mt-1" />
+                  <HelpCircle className="w-6 h-6 text-purple-400 flex-shrink-0 mt-1" />
                 </div>
 
-                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/80 leading-relaxed">
-                  💡 <span className="font-bold">Why this matters:</span> {currentQuestion.reason}
+                <p className="text-xs text-slate-600 bg-purple-50/50 p-3.5 rounded-xl border border-purple-200/60 leading-relaxed font-medium">
+                  💡 <span className="font-bold text-purple-900">Why this matters:</span> {currentQuestion.reason}
                 </p>
 
                 {/* Predefined Selectable Options */}
                 <div className="space-y-3 pt-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">
                     Select One Option:
                   </span>
                   {currentQuestion.options && currentQuestion.options.length > 0 ? (
@@ -446,12 +446,12 @@ export const NewCase: React.FC = () => {
                             onClick={() => handleOptionSelect(opt)}
                             className={`p-4 rounded-2xl text-xs font-bold text-left transition-all border flex items-center justify-between ${
                               isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
-                                : 'bg-slate-50 text-slate-800 border-slate-200/90 hover:bg-indigo-50 hover:border-indigo-200'
+                                ? 'bg-[#F3EEFF] text-[#581C87] border-[#8B5CF6] shadow-md ring-2 ring-purple-200'
+                                : 'bg-white text-slate-800 border-purple-200/80 hover:bg-purple-50/60 hover:border-purple-300'
                             }`}
                           >
                             <span>{optLabel}</span>
-                            {isSelected && <CheckCircle className="w-4 h-4 text-white flex-shrink-0 ml-2" />}
+                            {isSelected && <CheckCircle className="w-4 h-4 text-purple-600 flex-shrink-0 ml-2" />}
                           </button>
                         );
                       })}
@@ -462,12 +462,12 @@ export const NewCase: React.FC = () => {
                       onChange={e => setCurrentAnswerInput(e.target.value)}
                       rows={3}
                       placeholder="Type your clarification answer here..."
-                      className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-white border border-purple-200 rounded-2xl p-3.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between pt-4 border-t border-purple-100">
                   <span className="text-xs text-slate-400 font-medium">
                     Evidence Sufficiency Evaluator Active ✓
                   </span>
@@ -475,7 +475,7 @@ export const NewCase: React.FC = () => {
                   <button
                     onClick={handleAnswerSubmit}
                     disabled={!currentAnswerInput || loading}
-                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-6 py-3 btn-royal-primary text-xs font-extrabold rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5"
                   >
                     <span>Submit & Continue</span>
                     <ArrowRight className="w-4 h-4" />
@@ -486,13 +486,13 @@ export const NewCase: React.FC = () => {
 
             {/* DYNAMIC EVIDENCE RECOMMENDATION STAGE */}
             {stage === 'evidence' && (
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-teal-200 shadow-lg space-y-6">
-                <div className="space-y-2 border-b border-slate-100 pb-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-extrabold border border-teal-200">
-                    <FileCheck className="w-4 h-4 text-teal-600" />
+              <div className="lavender-card p-6 sm:p-8 shadow-xl space-y-6 border-purple-200">
+                <div className="space-y-2 border-b border-purple-100 pb-4">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-extrabold border border-purple-200">
+                    <FileCheck className="w-4 h-4 text-purple-600" />
                     <span>Evidence Recommendation Stage</span>
                   </div>
-                  <h2 className="text-xl font-extrabold text-slate-900">
+                  <h2 className="text-xl font-extrabold text-slate-900 font-editorial">
                     Recommended evidence for this case
                   </h2>
                   <p className="text-xs text-slate-600">
@@ -503,12 +503,12 @@ export const NewCase: React.FC = () => {
                 {/* Evidence Checklist */}
                 {recommendedEvidence.length > 0 && (
                   <div className="space-y-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
                       Suggested Items for Your Situation
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {recommendedEvidence.map(ev => (
-                        <div key={ev.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
+                        <div key={ev.id} className="bg-purple-50/40 p-4 rounded-2xl border border-purple-200/60 space-y-1">
                           <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
                             <span>📄</span>
                             <span>{ev.title}</span>
@@ -521,8 +521,8 @@ export const NewCase: React.FC = () => {
                 )}
 
                 {/* File Upload Box */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
-                  <span className="text-xs font-bold text-slate-700 block">
+                <div className="bg-purple-50/30 p-5 rounded-2xl border border-purple-200/60 space-y-4">
+                  <span className="text-xs font-extrabold text-slate-700 block">
                     Attach File or Add Evidence Detail
                   </span>
                   
@@ -532,10 +532,10 @@ export const NewCase: React.FC = () => {
                       value={fileNotesInput}
                       onChange={e => setFileNotesInput(e.target.value)}
                       placeholder="e.g. UPI receipt screenshot / Tenancy agreement copy"
-                      className="flex-1 bg-white border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 bg-white border border-purple-200 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
 
-                    <label className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+                    <label className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Select File</span>
                       <input type="file" onChange={handleSimulateFileUpload} className="hidden" />
@@ -543,15 +543,15 @@ export const NewCase: React.FC = () => {
                   </div>
 
                   {uploadedFiles.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-slate-200">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase">Attached Evidence Files:</span>
+                    <div className="space-y-2 pt-2 border-t border-purple-200/60">
+                      <span className="text-[11px] font-extrabold text-slate-400 uppercase">Attached Evidence Files:</span>
                       {uploadedFiles.map(f => (
-                        <div key={f.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                        <div key={f.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-purple-200 text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="text-teal-600 font-bold">✓ {f.name}</span>
+                            <span className="text-purple-700 font-bold">✓ {f.name}</span>
                             <span className="text-slate-400 text-[10px]">({f.notes})</span>
                           </div>
-                          <button onClick={() => handleRemoveFile(f.id)} className="text-red-500 hover:text-red-700 font-bold text-[10px]">
+                          <button onClick={() => handleRemoveFile(f.id)} className="text-rose-500 hover:text-rose-700 font-bold text-[10px]">
                             Remove
                           </button>
                         </div>
@@ -561,10 +561,10 @@ export const NewCase: React.FC = () => {
                 </div>
 
                 {/* Action Buttons: Continue OR Skip */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-purple-100">
                   <button
                     onClick={() => handleFinalizeSolution(true)}
-                    className="w-full sm:w-auto px-5 py-3 text-slate-600 hover:text-slate-900 font-bold text-xs rounded-xl border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5"
+                    className="w-full sm:w-auto px-5 py-3 text-slate-600 hover:text-purple-900 font-bold text-xs rounded-xl border border-purple-200 hover:bg-purple-50 transition-all flex items-center justify-center gap-1.5"
                   >
                     <FileX className="w-4 h-4 text-slate-400" />
                     <span>Continue Without Evidence</span>
@@ -573,7 +573,7 @@ export const NewCase: React.FC = () => {
                   <button
                     onClick={() => handleFinalizeSolution(false)}
                     disabled={loading}
-                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 py-3.5 btn-royal-primary font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
                   >
                     {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     <span>Generate Full Case Analysis</span>
@@ -585,10 +585,10 @@ export const NewCase: React.FC = () => {
 
           {/* RIGHT SIDEBAR: AI CASE UNDERSTANDING PANEL */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 sticky top-24">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-indigo-600" />
+            <div className="lavender-card p-6 space-y-5 sticky top-24">
+              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2 font-editorial">
+                  <Shield className="w-4 h-4 text-purple-600" />
                   <span>AI Case Understanding</span>
                 </h3>
                 {understanding?.confidence && (
@@ -596,7 +596,7 @@ export const NewCase: React.FC = () => {
                     understanding.confidence === 'high'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       : understanding.confidence === 'medium'
-                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      ? 'bg-purple-100 text-purple-900 border-purple-200'
                       : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}>
                     {understanding.confidence} Confidence
@@ -608,11 +608,11 @@ export const NewCase: React.FC = () => {
                 <>
                   {/* Category & Relationship Badge */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Classification & Relationship
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-extrabold border border-indigo-200 uppercase">
+                      <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-900 text-xs font-extrabold border border-purple-200 uppercase">
                         {understanding.categoryBadge || 'CIVIC MATTER'}
                       </span>
                       {understanding.relationship && (
@@ -626,12 +626,12 @@ export const NewCase: React.FC = () => {
                   {/* RTI Safety Warning Banner */}
                   <div className={`p-2.5 rounded-2xl border text-xs font-semibold flex items-center gap-2 ${
                     understanding.rtiApplicable
-                      ? 'bg-teal-50 text-teal-800 border-teal-200'
+                      ? 'bg-purple-50 text-purple-900 border-purple-200'
                       : 'bg-slate-50 text-slate-600 border-slate-200'
                   }`}>
                     {understanding.rtiApplicable ? (
                       <>
-                        <Sparkles className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0" />
                         <span>RTI Applicable (Public Authority Matter)</span>
                       </>
                     ) : (
@@ -644,32 +644,32 @@ export const NewCase: React.FC = () => {
 
                   {/* AI Generated Descriptive Case Title */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Descriptive Case Title
                     </span>
-                    <div className="w-full bg-gradient-to-r from-indigo-50 to-teal-50 border border-indigo-200/80 p-3 rounded-2xl text-xs font-extrabold text-indigo-950">
+                    <div className="w-full bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/80 p-3.5 rounded-2xl text-xs font-extrabold text-purple-950">
                       📌 {understanding.caseTitle || understanding.aiCaseDescription}
                     </div>
                   </div>
 
                   {/* Situation Summary */}
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Situation Summary
                     </span>
-                    <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200/60 leading-relaxed font-medium">
+                    <p className="text-xs text-slate-700 bg-purple-50/40 p-3 rounded-xl border border-purple-100 leading-relaxed font-medium">
                       {understanding.situationSummary || understanding.summary}
                     </p>
                   </div>
 
                   {/* Confirmed Facts List */}
                   <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Confirmed Facts ({understanding.confirmedFacts?.length || 0})
                     </span>
                     <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                       {understanding.confirmedFacts.map((fact, idx) => (
-                        <div key={idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-xs">
+                        <div key={idx} className="bg-purple-50/30 p-2.5 rounded-xl border border-purple-100 text-xs">
                           <span className="font-bold text-emerald-700">✓ Fact:</span>{' '}
                           <span className="text-slate-800">{fact.fact}</span>
                         </div>
@@ -685,3 +685,4 @@ export const NewCase: React.FC = () => {
     </div>
   );
 };
+

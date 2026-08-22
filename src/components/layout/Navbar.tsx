@@ -32,20 +32,20 @@ export const Navbar: React.FC = () => {
 
 
   return (
-    <header className="sticky top-0 z-50 bg-white/94 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-50 glass-navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 via-blue-600 to-teal-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-700 via-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
               <Compass className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-800">
+                <span className="font-extrabold text-xl tracking-tight text-slate-900 font-editorial">
                   CivicFlow
                 </span>
-                <span className="bg-indigo-100/90 text-indigo-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-indigo-200 uppercase tracking-wider">
+                <span className="bg-purple-100/90 text-purple-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-purple-200 uppercase tracking-wider">
                   AI
                 </span>
               </div>
@@ -59,10 +59,10 @@ export const Navbar: React.FC = () => {
           <nav className="hidden md:flex items-center gap-1">
             <Link
               to="/"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 isRouteActive('/')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#F3EEFF] text-[#6D28D9] font-bold border border-[#E9D5FF]'
+                  : 'text-slate-600 hover:text-purple-700 hover:bg-purple-50/60'
               }`}
             >
               {t('navHome')}
@@ -70,10 +70,10 @@ export const Navbar: React.FC = () => {
 
             <Link
               to="/case/new"
-              className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all ${
                 isRouteActive('/case/new') || isRouteActive('/cases/new')
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100'
+                  ? 'bg-purple-700 text-white shadow-md'
+                  : 'btn-royal-primary'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
@@ -82,10 +82,10 @@ export const Navbar: React.FC = () => {
 
             <Link
               to="/cases"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 isRouteActive('/cases') && !location.pathname.includes('/case/new')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#F3EEFF] text-[#6D28D9] font-bold border border-[#E9D5FF]'
+                  : 'text-slate-600 hover:text-purple-700 hover:bg-purple-50/60'
               }`}
             >
               {t('navMyCases')}
@@ -93,10 +93,10 @@ export const Navbar: React.FC = () => {
 
             <Link
               to="/forms"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 isRouteActive('/forms')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#F3EEFF] text-[#6D28D9] font-bold border border-[#E9D5FF]'
+                  : 'text-slate-600 hover:text-purple-700 hover:bg-purple-50/60'
               }`}
             >
               {t('navForms')}
@@ -104,10 +104,10 @@ export const Navbar: React.FC = () => {
 
             <Link
               to="/rti"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 isRouteActive('/rti')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-[#F3EEFF] text-[#6D28D9] font-bold border border-[#E9D5FF]'
+                  : 'text-slate-600 hover:text-purple-700 hover:bg-purple-50/60'
               }`}
             >
               {t('navRTI')}
@@ -117,12 +117,12 @@ export const Navbar: React.FC = () => {
           {/* Right Controls: Language Selector & Auth */}
           <div className="hidden md:flex items-center gap-3">
             {/* Language Selector Dropdown */}
-            <div className="relative flex items-center bg-slate-100/90 rounded-lg px-2 py-1 border border-slate-200">
-              <Globe className="w-4 h-4 text-slate-500 mr-1.5" />
+            <div className="relative flex items-center bg-purple-50/80 rounded-xl px-2.5 py-1 border border-purple-200/90 shadow-2xs">
+              <Globe className="w-4 h-4 text-purple-600 mr-1.5" />
               <select
                 value={language}
                 onChange={handleLangChange}
-                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs font-bold text-purple-900 focus:outline-none cursor-pointer pr-1"
               >
                 <option value="en">English (EN)</option>
                 <option value="ta">தமிழ் (TA)</option>
@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
 
             <Link
               to="/settings"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-xl text-slate-500 hover:text-purple-700 hover:bg-purple-50/80 transition-colors"
               title={t('navSettings')}
             >
               <SettingsIcon className="w-4 h-4" />
@@ -140,13 +140,13 @@ export const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-800 text-xs font-bold rounded-xl border border-indigo-200/80">
-                  <UserIcon className="w-3.5 h-3.5 text-indigo-600" />
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-900 text-xs font-extrabold rounded-xl border border-purple-200">
+                  <UserIcon className="w-3.5 h-3.5 text-purple-600" />
                   <span className="truncate max-w-[120px]">{displayName}</span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200/80 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition-colors flex items-center gap-1"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>{t('signOut')}</span>
@@ -155,10 +155,10 @@ export const Navbar: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                className={`text-xs font-extrabold px-4 py-2 rounded-xl transition-all ${
                   isAuthRoute
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80'
+                    ? 'btn-royal-primary'
+                    : 'text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200'
                 }`}
               >
                 {t('navLogin')}

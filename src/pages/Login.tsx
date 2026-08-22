@@ -116,16 +116,20 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center items-center px-4 py-12 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-teal-50/30">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-[85vh] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+      {/* Decorative Non-Interactive Ambient Floating Spheres */}
+      <div className="bg-ambient-orb-1" aria-hidden="true" />
+      <div className="bg-ambient-orb-2" aria-hidden="true" />
+
+      <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Logo & Platform Header */}
         <div className="text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-500 flex items-center justify-center text-white mx-auto shadow-lg shadow-indigo-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-700 via-purple-600 to-indigo-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-purple-500/20">
             <Compass className="w-6 h-6" />
           </div>
           <div className="flex items-center justify-center gap-1.5">
-            <span className="font-extrabold text-2xl text-slate-900 tracking-tight">CivicFlow</span>
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-2 py-0.5 rounded-md border border-indigo-200 uppercase">
+            <span className="font-extrabold text-2xl text-slate-900 tracking-tight font-editorial">CivicFlow</span>
+            <span className="bg-purple-100/90 text-purple-800 text-xs font-extrabold px-2 py-0.5 rounded-md border border-purple-200 uppercase">
               AI
             </span>
           </div>
@@ -135,16 +139,16 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
         </div>
 
         {/* Auth Container Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] space-y-6">
+        <div className="lavender-card p-6 sm:p-8 space-y-6 shadow-[0_24px_70px_rgba(88,28,135,0.08)]">
           {/* Segmented Tab Bar */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60">
+          <div className="grid grid-cols-2 p-1 bg-purple-50/80 rounded-2xl border border-purple-200/70">
             <button
               type="button"
               onClick={() => switchTab('login')}
-              className={`py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`py-2 text-xs font-extrabold rounded-xl transition-all ${
                 tab === 'login'
-                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-purple-900 shadow-sm border border-purple-200'
+                  : 'text-slate-500 hover:text-purple-900'
               }`}
             >
               {t('loginTab')}
@@ -152,10 +156,10 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
             <button
               type="button"
               onClick={() => switchTab('register')}
-              className={`py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`py-2 text-xs font-extrabold rounded-xl transition-all ${
                 tab === 'register'
-                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-purple-900 shadow-sm border border-purple-200'
+                  : 'text-slate-500 hover:text-purple-900'
               }`}
             >
               {t('createAccountTab')}
@@ -181,7 +185,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
             /* --- LOGIN FORM --- */
             <form onSubmit={handleSignInSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('emailLabel')}
                 </label>
                 <input
@@ -190,12 +194,12 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   autoComplete="email"
-                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('passwordLabel')}
                 </label>
                 <div className="relative">
@@ -205,7 +209,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
                     autoComplete="current-password"
-                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                   />
                   <button
                     type="button"
@@ -221,7 +225,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full py-3.5 btn-royal-primary text-xs font-extrabold rounded-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -240,7 +244,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                 <button
                   type="button"
                   onClick={() => switchTab('register')}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                  className="text-xs font-extrabold text-purple-700 hover:text-purple-900 hover:underline"
                 >
                   {t('createAccountBtn')}
                 </button>
@@ -250,7 +254,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
             /* --- CREATE ACCOUNT FORM --- */
             <form onSubmit={handleSignUpSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('fullNameLabel')}
                 </label>
                 <input
@@ -259,12 +263,12 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                   onChange={e => setFullName(e.target.value)}
                   placeholder="Citizen Name"
                   autoComplete="name"
-                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('emailLabel')}
                 </label>
                 <input
@@ -273,12 +277,12 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   autoComplete="email"
-                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('passwordLabel')}
                 </label>
                 <div className="relative">
@@ -288,7 +292,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Min. 8 characters"
                     autoComplete="new-password"
-                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                   />
                   <button
                     type="button"
@@ -302,7 +306,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                   {t('confirmPasswordLabel')}
                 </label>
                 <div className="relative">
@@ -312,7 +316,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                     onChange={e => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter password"
                     autoComplete="new-password"
-                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="w-full bg-white border border-purple-200/90 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                   />
                   <button
                     type="button"
@@ -328,7 +332,7 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full py-3.5 btn-royal-primary text-xs font-extrabold rounded-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -347,13 +351,14 @@ export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
                 <button
                   type="button"
                   onClick={() => switchTab('login')}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                  className="text-xs font-extrabold text-purple-700 hover:text-purple-900 hover:underline"
                 >
                   {t('signInBtn')}
                 </button>
               </div>
             </form>
           )}
+
         </div>
 
         {/* Local Hackathon Auth Note */}
