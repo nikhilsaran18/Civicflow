@@ -45,17 +45,33 @@ export class GeminiClient {
       const response = await fetch('/api/civic-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload }),
+        body: JSON.stringify({ action: action || '', payload: payload || {} }),
       });
 
-      if (!response.ok) return null;
+      if (!response.ok) {
+        let errorCode = 'HTTP_ERROR';
+        try {
+          const errJson = await response.json();
+          errorCode = errJson.errorCode || errorCode;
+        } catch {
+          // ignore non-json response
+        }
+        console.warn(`[CivicFlow AI Diagnostic] Action: "${action}", Status: ${response.status}, ErrorCode: "${errorCode}"`);
+        return null;
+      }
+
       const res = await response.json();
       if (res.success && res.data) {
         return res.data as T;
       }
+
+      if (res.success === false) {
+        console.warn(`[CivicFlow AI Diagnostic] Action: "${action}", Status: ${response.status}, ErrorCode: "${res.errorCode || 'UNKNOWN'}"`);
+      }
+
       return null;
     } catch (err) {
-      console.warn(`Error calling backend action ${action}:`, err);
+      console.warn(`[CivicFlow AI Diagnostic] Action: "${action}", Status: NetworkError, ErrorCode: "CLIENT_FETCH_ERROR"`);
       return null;
     }
   }

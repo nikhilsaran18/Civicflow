@@ -19,10 +19,14 @@ export const Cases: React.FC = () => {
   }, []);
 
   const filteredCases = cases.filter(c => {
+    const titleStr = c.title || '';
+    const origStr = c.originalProblem || '';
+    const aiDescStr = c.aiCaseDescription || '';
+
     const matchesSearch =
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.originalProblem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.aiCaseDescription && c.aiCaseDescription.toLowerCase().includes(searchTerm.toLowerCase()));
+      titleStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      origStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      aiDescStr.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;

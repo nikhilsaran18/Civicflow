@@ -295,7 +295,26 @@ Return ONLY JSON:
       return res.json(result);
     }
 
-    return res.status(400).json({ success: false, errorCode: 'UNKNOWN_ACTION', error: `Unknown action: ${action}` });
+    // 8. Question Validation
+    if (action === 'validate-question') {
+      const { caseNarrative, question } = payload || {};
+      const prompt = `Validate if this clarification question is strictly relevant to the user's case narrative:
+Case Narrative: "${caseNarrative}"
+Question: ${JSON.stringify(question)}
+
+Return ONLY JSON:
+{
+  "relevant": true,
+  "duplicate": false,
+  "assumesUnsupportedFact": false,
+  "reason": "Valid question"
+}`;
+
+      const result = await geminiService.generateJSON(CIVIC_SYSTEM_PROMPT, prompt);
+      return res.json(result);
+    }
+
+    return res.status(400).json({ success: false, errorCode: 'UNKNOWN_ACTION', error: 'Unsupported CivicFlow AI action.' });
   } catch (err) {
     console.error('Error handling /api/civic-ai:', err);
     return res.status(500).json({ success: false, errorCode: 'SERVER_ERROR', error: 'Internal server error.' });

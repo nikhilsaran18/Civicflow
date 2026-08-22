@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, FileText, Clock, ShieldCheck, ExternalLink, Edit3, Bookmark, Download, CheckCircle, HelpCircle } from 'lucide-react';
+import { Sparkles, FileText, Clock, Shield, ShieldCheck, ExternalLink, Edit3, Bookmark, Download, CheckCircle, HelpCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { CivicCase, ActionPlanStep } from '../types/civicIntelligence';
 import { CaseStorageService } from '../services/caseStorageService';
@@ -46,7 +46,25 @@ export const CaseDetail: React.FC = () => {
     );
   }
 
-  const { solution, understanding, qAndA } = civicCase;
+  const solution = civicCase.solution;
+  const understanding = civicCase.understanding || {
+    caseTitle: civicCase.title || 'Untitled Case',
+    categoryBadge: civicCase.categoryBadge || 'Civic Issue',
+    relationship: 'UNKNOWN',
+    issueCategory: 'UNKNOWN',
+    rtiApplicable: false,
+    situationSummary: civicCase.originalProblem || '',
+    confirmedFacts: [],
+    likelyGoal: 'Resolve issue',
+    confidence: 'medium',
+  };
+  const qAndA = civicCase.qAndA || [];
+  const confirmedFacts = understanding.confirmedFacts || [];
+  const actionPlan = solution.actionPlan || [];
+  const options = solution.options || [];
+  const rightsAndConsiderations = solution.rightsAndConsiderations || [];
+  const sources = solution.sources || [];
+  const suggestedDocuments = solution.suggestedDocuments || [];
 
   const handleStepStatusToggle = (stepOrder: number) => {
     if (!civicCase || !civicCase.solution) return;
@@ -239,15 +257,17 @@ export const CaseDetail: React.FC = () => {
       </section>
 
       {/* SECTION 5 — RECOMMENDED NEXT STEP */}
-      <section className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-3 border border-purple-500/30">
-        <div className="flex items-center gap-2 font-black uppercase tracking-wider text-xs bg-white/20 text-white px-3 py-1 rounded-full w-fit">
-          ⭐ {t('recommendedNextStepTitle')}
-        </div>
-        <h3 className="text-xl sm:text-2xl font-extrabold font-editorial">{solution.recommendedNextStep.title}</h3>
-        <p className="text-sm font-medium leading-relaxed max-w-3xl text-purple-100">
-          {solution.recommendedNextStep.explanation}
-        </p>
-      </section>
+      {solution.recommendedNextStep && (
+        <section className="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-3 border border-purple-500/30">
+          <div className="flex items-center gap-2 font-black uppercase tracking-wider text-xs bg-white/20 text-white px-3 py-1 rounded-full w-fit">
+            ⭐ {t('recommendedNextStepTitle')}
+          </div>
+          <h3 className="text-xl sm:text-2xl font-extrabold font-editorial">{solution.recommendedNextStep.title || 'Take Recommended Action'}</h3>
+          <p className="text-sm font-medium leading-relaxed max-w-3xl text-purple-100">
+            {solution.recommendedNextStep.explanation || ''}
+          </p>
+        </section>
+      )}
 
       {/* SECTION 6 — YOUR DYNAMIC ACTION PLAN */}
       <section className="lavender-card p-6 sm:p-8 space-y-6">
