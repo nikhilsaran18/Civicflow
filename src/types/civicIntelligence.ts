@@ -1,3 +1,53 @@
+export type RelationshipType =
+  | 'GOVERNMENT_PUBLIC_AUTHORITY'
+  | 'PRIVATE_INDIVIDUAL'
+  | 'BUSINESS_SELLER'
+  | 'ONLINE_PLATFORM'
+  | 'BANK_FINANCIAL_INSTITUTION'
+  | 'UPI_PAYMENT_PROVIDER'
+  | 'EMPLOYER'
+  | 'EMPLOYEE'
+  | 'LANDLORD'
+  | 'TENANT'
+  | 'EDUCATIONAL_INSTITUTION'
+  | 'HOSPITAL_HEALTHCARE_PROVIDER'
+  | 'INSURANCE_PROVIDER'
+  | 'TELECOM_PROVIDER'
+  | 'UTILITY_PROVIDER'
+  | 'POLICE_LAW_ENFORCEMENT'
+  | 'LOCAL_BODY'
+  | 'GOVERNMENT_SCHEME'
+  | 'CYBER_ONLINE_ACTOR'
+  | 'UNKNOWN'
+  | 'OTHER';
+
+export type IssueCategory =
+  | 'CONSUMER_REFUND'
+  | 'DEFECTIVE_PRODUCT'
+  | 'SERVICE_FAILURE'
+  | 'PAYMENT_DISPUTE'
+  | 'PRIVATE_FINANCIAL_DISPUTE'
+  | 'SUSPECTED_THEFT'
+  | 'SUSPECTED_FRAUD'
+  | 'UNAUTHORIZED_TRANSFER'
+  | 'UPI_FRAUD'
+  | 'BANKING_FRAUD'
+  | 'ACCOUNT_ACCESS'
+  | 'CYBER_FRAUD'
+  | 'LANDLORD_DEPOSIT'
+  | 'RENTAL_DISPUTE'
+  | 'EVICTION_ISSUE'
+  | 'SALARY_NONPAYMENT'
+  | 'WORKPLACE_DISPUTE'
+  | 'EDUCATION_GRIEVANCE'
+  | 'PUBLIC_SERVICE_FAILURE'
+  | 'GOVERNMENT_BENEFIT_ISSUE'
+  | 'PENSION_ISSUE'
+  | 'PUBLIC_AUTHORITY_DELAY'
+  | 'RTI_INFORMATION_REQUEST'
+  | 'HEALTHCARE_SERVICE_DISPUTE'
+  | 'UNKNOWN';
+
 export type QuestionType =
   | 'text'
   | 'textarea'
@@ -8,13 +58,37 @@ export type QuestionType =
   | 'number'
   | 'location';
 
+export interface ClarificationOption {
+  id: string;
+  label: string;
+  value: string;
+}
+
 export interface ClarificationQuestion {
   id: string;
   question: string;
   reason: string;
   type: QuestionType;
-  options?: string[];
+  options?: (string | ClarificationOption)[];
   required: boolean;
+}
+
+export interface CaseEvidenceState {
+  counterpartyKnown: boolean;
+  relationshipKnown: boolean;
+  eventKnown: boolean;
+  transactionMethodKnown: boolean;
+  authorizationKnown: boolean;
+  timelineKnown: boolean;
+  amountOrImpactKnown: boolean;
+  evidenceAvailabilityKnown: boolean;
+  priorActionKnown: boolean;
+  urgencyKnown: boolean;
+  desiredOutcomeKnown: boolean;
+  jurisdictionKnown: boolean;
+  classificationConfidence: number;
+  routeConfidence: number;
+  missingCriticalFacts: string[];
 }
 
 export interface ConfirmedFact {
@@ -51,6 +125,13 @@ export interface CaseUnderstanding {
   unknowns?: string[];
   parties?: PartyInfo[];
   responsiblePartyType?: string;
+  relationship?: RelationshipType;
+  issueCategory?: IssueCategory;
+  subCategory?: string;
+  evidenceState?: CaseEvidenceState;
+  rtiApplicable?: boolean;
+  potentialRoutes?: string[];
+  inappropriateRoutes?: string[];
   likelyGoal?: string;
   desiredOutcome?: string;
   aiCaseDescription?: string;
@@ -61,7 +142,6 @@ export interface CaseUnderstanding {
   domainName?: string; // internal compatibility
   applicableLaws?: string[];
 }
-
 
 export interface OptionPath {
   id?: string;
@@ -129,6 +209,11 @@ export interface CivicSolution {
   responsibleAuthority?: ResponsibleAuthority | null;
   limitations: string[];
   confidence: 'low' | 'medium' | 'high';
+  relationship?: RelationshipType;
+  issueCategory?: IssueCategory;
+  rtiApplicable?: boolean;
+  potentialRoutes?: string[];
+  inappropriateRoutes?: string[];
 }
 
 export interface DynamicField {
@@ -156,6 +241,8 @@ export interface QuestionAnswerPair {
   questionNumber: number;
   question: ClarificationQuestion;
   answer: string | string[];
+  selectedOptionId?: string;
+  selectedOptionLabel?: string;
 }
 
 export interface CivicCase {
@@ -180,5 +267,3 @@ export interface CivicCase {
   caseFileMarkdown?: string;
   answers: Record<string, string | string[]>;
 }
-
-

@@ -44,29 +44,30 @@ app.post('/api/civic-ai', async (req, res) => {
   }
 
   try {
-    // 1. Initial Case Understanding
+    // 1. Initial Case Understanding with Relationship-First Classification
     if (action === 'understand-case' || action === 'understand') {
       const { userDescription, answers = {} } = payload || {};
-      const prompt = `Analyze this citizen case narrative and any provided context:
+      const prompt = `Analyze this citizen narrative using Relationship-First Classification:
 Narrative: "${userDescription}"
-Current Answers: ${JSON.stringify(answers)}
+Answers: ${JSON.stringify(answers)}
 
-Return ONLY a JSON object matching this exact schema:
+Determine:
+1. relationship: GOVERNMENT_PUBLIC_AUTHORITY | PRIVATE_INDIVIDUAL | BUSINESS_SELLER | ONLINE_PLATFORM | BANK_FINANCIAL_INSTITUTION | UPI_PAYMENT_PROVIDER | EMPLOYER | LANDLORD | EDUCATIONAL_INSTITUTION | HOSPITAL_HEALTHCARE_PROVIDER | POLICE_LAW_ENFORCEMENT | OTHER
+2. issueCategory: CONSUMER_REFUND | PRIVATE_FINANCIAL_DISPUTE | UNAUTHORIZED_TRANSFER | UPI_FRAUD | BANKING_FRAUD | LANDLORD_DEPOSIT | WORKPLACE_DISPUTE | PENSION_ISSUE | PUBLIC_SERVICE_FAILURE | HEALTHCARE_SERVICE_DISPUTE | OTHER
+3. rtiApplicable: true ONLY if information/records are sought from a Public Authority. FALSE for private individuals, girlfriends, landlords, sellers, banks.
+
+Return ONLY JSON matching schema:
 {
-  "caseTitle": "Specific descriptive title derived strictly from case facts (3-8 words, e.g. Unexpected Cessation of Father's Pension, Rental Security Deposit Dispute)",
-  "categoryBadge": "Concise 1-3 word badge describing category (e.g. PENSION / ADMINISTRATIVE, TENANCY, MUNICIPAL SERVICE, EDUCATION, CASTE CERTIFICATE, CONSUMER DISPUTE)",
+  "caseTitle": "Neutral descriptive title (3-8 words, e.g. Suspected Unauthorized UPI Transaction, Private Money Dispute, Consumer Refund Dispute)",
+  "categoryBadge": "Concise 1-3 word badge describing relationship/issue",
+  "relationship": "PRIVATE_INDIVIDUAL | BUSINESS_SELLER | BANK_FINANCIAL_INSTITUTION | GOVERNMENT_PUBLIC_AUTHORITY | LANDLORD | EMPLOYER | HOSPITAL_HEALTHCARE_PROVIDER | UNKNOWN",
+  "issueCategory": "PRIVATE_FINANCIAL_DISPUTE | CONSUMER_REFUND | UNAUTHORIZED_TRANSFER | LANDLORD_DEPOSIT | PENSION_ISSUE | PUBLIC_SERVICE_FAILURE | UNKNOWN",
   "situationSummary": "Plain language overview of the citizen's situation",
   "confirmedFacts": [
-    { "id": "f1", "fact": "Declarative factual statement extracted from narrative (e.g. The father receives a Government Employee Pension which stopped 3 months ago)", "source": "initial_statement" }
+    { "id": "f1", "fact": "Declarative factual statement extracted from narrative", "source": "initial_statement" }
   ],
-  "inferences": ["Reasonable inference 1"],
-  "unknowns": ["Missing fact 1"],
-  "parties": [
-    { "name": "Party name if known, else role", "type": "landlord | employer | seller | municipal_corporation | government_department | institute | utility_provider | individual | unknown" }
-  ],
-  "responsiblePartyType": "private | government | individual | commercial",
-  "likelyGoal": "Specific citizen objective derived from narrative (e.g. Restore pension payments and recover outstanding pension arrears)",
-  "jurisdictionRelevant": true,
+  "rtiApplicable": false,
+  "likelyGoal": "Specific citizen objective derived from narrative",
   "confidence": "low" | "medium" | "high"
 }`;
 
@@ -74,30 +75,34 @@ Return ONLY a JSON object matching this exact schema:
       return res.json(result);
     }
 
-    // 2. Dynamic Sequential Question Generation (Q1, Q2, Q3)
+    // 2. Dynamic Sequential Question Generation with Predefined Selectable Choices
     if (action === 'generate-next-question') {
-      const { userDescription, confirmedFacts = [], previousQA = [], questionNumber = 1 } = payload || {};
-      const prompt = `Generate ONE single, essential clarification question for Question #${questionNumber} of 3.
+      const { userDescription, confirmedFacts = [], previousQA = [], questionNumber = 1, relationship = 'UNKNOWN' } = payload || {};
+      const prompt = `Generate ONE single, decision-changing clarification question for Question #${questionNumber}.
 
 Original Narrative: "${userDescription}"
+Relationship Identified: "${relationship}"
 Confirmed Facts: ${JSON.stringify(confirmedFacts)}
 Previous Questions & Answers: ${JSON.stringify(previousQA)}
 
-RULES:
-1. Generate EXACTLY ONE question.
-2. DO NOT repeat any previous question or ask facts already answered in original narrative.
-3. Make question specific to the situation (e.g. for pension, ask about PPO/bank/department; for caste cert, ask about portal/acknowledgment number/authority; for university, ask about written reason/course status).
-4. DO NOT use generic terms like "opposing party" unless there is a private counterparty.
-5. Must materially improve case understanding, jurisdiction, authority selection, evidence recommendation, or remedy.
+CRITICAL REQUIREMENTS:
+1. Provide 3 to 7 structured, selectable answer choices (options) for this question.
+2. DO NOT assume a government authority or CPGRAMS unless relationship is GOVERNMENT_PUBLIC_AUTHORITY or POLICE_LAW_ENFORCEMENT.
+3. Include choices like "I am not sure" or "None of these" where appropriate.
+4. DO NOT repeat any previous question or fact already provided.
 
 Return ONLY JSON matching schema:
 {
   "question": {
     "id": "q_${questionNumber}_${Date.now()}",
     "question": "Clear, specific question text",
-    "reason": "Why this specific answer is necessary for the case",
-    "type": "single_select" | "yes_no" | "text" | "textarea",
-    "options": ["Option 1", "Option 2", "Option 3"],
+    "reason": "Why this answer is necessary to clarify the classification or route",
+    "type": "single_select",
+    "options": [
+      { "id": "opt1", "label": "Option 1 label", "value": "VALUE_1" },
+      { "id": "opt2", "label": "Option 2 label", "value": "VALUE_2" },
+      { "id": "opt3", "label": "I am not sure", "value": "UNSURE" }
+    ],
     "required": true
   }
 }`;
@@ -106,19 +111,25 @@ Return ONLY JSON matching schema:
       return res.json(result);
     }
 
-    // 3. Question Validation
-    if (action === 'validate-question') {
-      const { caseNarrative, question } = payload || {};
-      const prompt = `Review this proposed question against case narrative:
-Narrative: "${caseNarrative}"
-Question: "${question?.question}"
+    // 3. Evidence Sufficiency Evaluation
+    if (action === 'evaluate-sufficiency') {
+      const { userDescription, relationship, issueCategory, confirmedFacts = [], previousQA = [] } = payload || {};
+      const prompt = `Evaluate evidence sufficiency for this case:
+Narrative: "${userDescription}"
+Relationship: "${relationship}"
+Issue Category: "${issueCategory}"
+Confirmed Facts: ${JSON.stringify(confirmedFacts)}
+Q&A History: ${JSON.stringify(previousQA)}
 
-Return JSON:
+Determine whether sufficient facts exist to select a valid route without guessing.
+
+Return ONLY JSON:
 {
-  "relevant": true,
-  "duplicate": false,
-  "assumesUnsupportedFact": false,
-  "reason": "Validation details"
+  "sufficient": true | false,
+  "classificationConfidence": 0.85,
+  "routeConfidence": 0.80,
+  "missingCriticalFacts": ["List of missing facts if insufficient, else empty array"],
+  "readinessReason": "Explanation of why case is ready or what fact remains missing"
 }`;
 
       const result = await geminiService.generateJSON(CIVIC_SYSTEM_PROMPT, prompt);
@@ -128,7 +139,7 @@ Return JSON:
     // 4. Recommend Dynamic Case-Specific Evidence
     if (action === 'recommend-evidence') {
       const { userDescription, confirmedFacts = [], qAndA = [] } = payload || {};
-      const prompt = `Based on this case, recommend 1 to 4 useful evidence items that the citizen could upload to strengthen their case.
+      const prompt = `Based on this case, recommend 1 to 4 case-specific evidence items.
 
 Narrative: "${userDescription}"
 Confirmed Facts: ${JSON.stringify(confirmedFacts)}
@@ -139,7 +150,7 @@ Return ONLY JSON matching schema:
   "recommendedEvidence": [
     {
       "id": "ev1",
-      "title": "Short evidence title (e.g., Pension Payment Order (PPO), Rent Agreement, Caste Application Acknowledgment)",
+      "title": "Short evidence title (e.g., Bank Statement, UPI Receipt, Screenshots, Rent Agreement)",
       "reason": "Why this evidence is helpful for this case",
       "priority": "recommended" | "optional"
     }
@@ -150,49 +161,37 @@ Return ONLY JSON matching schema:
       return res.json(result);
     }
 
-    // 5. Evidence Analysis Layer
-    if (action === 'analyze-evidence') {
-      const { evidenceList = [], existingFacts = [] } = payload || {};
-      const prompt = `Analyze uploaded evidence metadata/notes and extract confirmed facts:
-Evidence Items: ${JSON.stringify(evidenceList)}
-Existing Facts: ${JSON.stringify(existingFacts)}
-
-Return ONLY JSON:
-{
-  "extractedFacts": [
-    { "fact": "Extracted fact detail", "source": "evidence_file", "confidence": "high" }
-  ]
-}`;
-
-      const result = await geminiService.generateJSON(CIVIC_SYSTEM_PROMPT, prompt);
-      return res.json(result);
-    }
-
-    // 6. Full Case Analysis & Solution Generation
+    // 5. Full Case Analysis & Solution Generation
     if (action === 'solve-case' || action === 'research-and-solve') {
       const { userDescription, understanding = {}, qAndA = [], evidenceFacts = [] } = payload || {};
-      const prompt = `Generate a complete, practical CivicSolution for this case.
+      const prompt = `Generate a complete CivicSolution for this case strictly adhering to Relationship-First rules.
 
 Original Narrative: "${userDescription}"
 Case Understanding: ${JSON.stringify(understanding)}
-All 3 Clarification Q&A: ${JSON.stringify(qAndA)}
+Clarification Q&A: ${JSON.stringify(qAndA)}
 Evidence Facts: ${JSON.stringify(evidenceFacts)}
 
-CRITICAL INSTRUCTIONS:
-- DO NOT use generic default names such as "Nodal Public Authority / Service Provider" or "Formal Administrative Representation".
-- DO NOT invent fake authority names, statutory laws, portal URLs, or deadlines.
-- If responsible authority requires location/jurisdiction verification, set authority name to "Requires jurisdiction verification" and state what details are needed.
-- Derive a specific citizen goal (e.g. "Restore pension payments and recover outstanding pension arrears").
-- Derive a specific category badge (e.g. "PENSION / ADMINISTRATIVE", "TENANCY", "MUNICIPAL SERVICE", "EDUCATION", "CASTE CERTIFICATE").
+CRITICAL SAFETY RULES:
+1. If relationship is PRIVATE_INDIVIDUAL, BUSINESS_SELLER, LANDLORD, EMPLOYER, or BANK:
+   - DO NOT suggest CPGRAMS or Nodal Public Grievance Officer.
+   - DO NOT set rtiApplicable to true.
+   - Suggest appropriate routes (e.g. Bank Support, Cybercrime Portal, Consumer Commission, Police Station, Civil Dispute).
+2. Set rtiApplicable to TRUE ONLY IF the issue involves seeking records/information from a Public Authority.
+3. If authority is private or unknown, set responsibleAuthority.name to null or appropriate private entity. NEVER invent fake government department titles.
 
 Return ONLY JSON matching schema:
 {
-  "caseTitle": "Descriptive Case Title (3-8 words, specific)",
-  "categoryBadge": "Category badge e.g. PENSION / ADMINISTRATIVE",
+  "caseTitle": "Descriptive Case Title (3-8 words, neutral)",
+  "categoryBadge": "Category badge e.g. PRIVATE DISPUTE, CONSUMER, TENANCY, PENSION",
+  "relationship": "PRIVATE_INDIVIDUAL | BUSINESS_SELLER | BANK_FINANCIAL_INSTITUTION | GOVERNMENT_PUBLIC_AUTHORITY | LANDLORD | EMPLOYER | UNKNOWN",
+  "issueCategory": "PRIVATE_FINANCIAL_DISPUTE | CONSUMER_REFUND | UNAUTHORIZED_TRANSFER | LANDLORD_DEPOSIT | PENSION_ISSUE | UNKNOWN",
+  "rtiApplicable": false,
   "situationSummary": "Plain language summary of situation",
   "userGoal": "Derived primary citizen objective",
   "whatCivicFlowFound": "Civic, legal or practical context explained simply",
-  "rightsAndConsiderations": ["Case-specific right/consideration 1", "Case-specific right/consideration 2"],
+  "rightsAndConsiderations": ["Case-specific consideration 1", "Case-specific consideration 2"],
+  "potentialRoutes": ["Primary Route", "Secondary Route"],
+  "inappropriateRoutes": ["CPGRAMS", "RTI"],
   "options": [
     {
       "id": "opt1",
@@ -216,20 +215,20 @@ Return ONLY JSON matching schema:
     }
   ],
   "responsibleAuthority": {
-    "name": "Exact Official Authority Name (e.g. Pension Disbursing Bank / CPPC, District Revenue Office, Municipal Electrical Ward Office) or null",
-    "type": "Public Authority | Statutory Body | Municipal | Regulator | Educational Body | Private Entity",
-    "relevance": "Why responsible for this issue",
-    "actionableInfo": "How to contact or submit grievance",
-    "officialLink": "https://official-domain.gov.in or omit if unverified",
+    "name": "Exact Authority Name or null",
+    "type": "Public Authority | Statutory Body | Bank / Financial | Cybercrime Portal | Police / Law Enforcement | Private Entity",
+    "relevance": "Why responsible",
+    "actionableInfo": "How to contact or proceed",
+    "officialLink": "https://official-domain.gov.in or omit if private/unverified",
     "confidence": "high" | "medium" | "low"
   },
   "sources": [
     { "id": "s1", "title": "Official Source / Portal Name", "url": "https://...", "relevance": "Why relevant" }
   ],
   "suggestedDocuments": [
-    { "id": "doc_1", "documentType": "representation | rti | complaint | demand_notice", "title": "Specific Document Title", "reason": "Why useful for this case", "recommended": true }
+    { "id": "doc_1", "documentType": "complaint | dispute_summary | demand_notice | representation", "title": "Specific Document Title", "reason": "Why useful", "recommended": true }
   ],
-  "limitations": ["CivicFlow provides civic and legal navigation information and does not replace qualified legal counsel."],
+  "limitations": ["CivicFlow provides civic navigation support and does not replace qualified legal counsel."],
   "confidence": "high" | "medium" | "low"
 }`;
 
@@ -237,7 +236,7 @@ Return ONLY JSON matching schema:
       return res.json(result);
     }
 
-    // 7. Dynamic Action Studio Document Generation
+    // 6. Dynamic Action Studio Document Generation
     if (action === 'generate-document') {
       const { docType, caseTitle, userDescription, answers = {}, solution = {} } = payload || {};
       const prompt = `Generate a dynamic, case-specific document draft for documentType: "${docType}"
@@ -246,11 +245,6 @@ Case Title: "${caseTitle}"
 Original Narrative: "${userDescription}"
 Answers & Facts: ${JSON.stringify(answers)}
 Case Solution: ${JSON.stringify(solution)}
-
-CRITICAL INSTRUCTIONS:
-- Use ONLY confirmed case facts.
-- Insert editable placeholders like [Landlord Name], [Invoice Number], [Property Address] for missing details.
-- Provide a dynamic list of fields metadata so the frontend can render input fields dynamically.
 
 Return ONLY JSON matching schema:
 {
@@ -264,22 +258,6 @@ Return ONLY JSON matching schema:
       "placeholder": "Enter your full name",
       "required": true,
       "type": "text"
-    },
-    {
-      "id": "opposing_party_name",
-      "label": "Opposing Party / Recipient Name",
-      "value": "${answers.opposing_party_name || ''}",
-      "placeholder": "Enter recipient or organization name",
-      "required": false,
-      "type": "text"
-    },
-    {
-      "id": "address_details",
-      "label": "Property / Incident Address",
-      "value": "${answers.location || ''}",
-      "placeholder": "Enter relevant address or locality",
-      "required": false,
-      "type": "text"
     }
   ],
   "previewMarkdown": "Full formatted Markdown draft..."
@@ -289,24 +267,23 @@ Return ONLY JSON matching schema:
       return res.json(result);
     }
 
-    // 8. Generate Professional Case File
+    // 7. Generate Professional Case File
     if (action === 'generate-case-file') {
       const { caseData = {} } = payload || {};
       const prompt = `Generate a complete Professional Case File in Markdown for this CivicFlow case:
 
 Case Data: ${JSON.stringify(caseData)}
 
-Format as a comprehensive CIVICFLOW AI CASE FILE with all key sections:
-- Case Metadata (ID, Title, Created Date, Status, Confidence)
+Format as a comprehensive CIVICFLOW AI CASE FILE:
+- Case Metadata (ID, Title, Category, Relationship, RTI Applicable)
 - Original Statement
-- AI Understanding & Confirmed Facts
-- Sequential Clarification Q&A (Question 1-3 & Answers)
-- Evidence Summary
-- Citizen Objective & Rights
-- Practical Options & Recommended Next Step
+- Confirmed Facts (Only citizen-provided facts)
+- Sequential Clarification Q&A Record
+- Recommended Evidence
+- Available Options & Recommended Next Step
 - Action Plan
-- Responsible Authority
-- Suggested Documents & Sources
+- Responsible Authority / Where to Go
+- Authoritative Sources
 - Official Safety Disclaimer
 
 Return ONLY JSON:
@@ -332,4 +309,3 @@ app.listen(PORT, () => {
     console.warn(`WARNING: GEMINI_API_KEY is missing or invalid in .env! Configure GEMINI_API_KEY in project root .env file.`);
   }
 });
-

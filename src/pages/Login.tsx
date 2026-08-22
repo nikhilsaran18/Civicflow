@@ -1,83 +1,368 @@
+// Prototype-only local authentication. Replace with server-side authentication for production.
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Compass, LogIn, ArrowRight, UserCheck } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Compass, Eye, EyeOff, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-export const Login: React.FC = () => {
-  const { login } = useAuth();
+interface LoginProps {
+  defaultTab?: 'login' | 'register';
+}
+
+export const Login: React.FC<LoginProps> = ({ defaultTab = 'login' }) => {
+  const { signIn, signUp } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
 
+  const fromPath = (location.state as any)?.from?.pathname || '/cases';
+
+  const [tab, setTab] = useState<'login' | 'register'>(defaultTab);
+
+  // Form states
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login(email || 'citizen@civicflow.in', 'Citizen User');
-    navigate('/cases');
+  // UI state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const validateEmail = (val: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
   };
 
-  const handleGuestDemo = () => {
-    login('guest@civicflow.in', 'Guest Citizen');
-    navigate('/case/new');
+  const handleSignInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!email.trim()) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+
+    if (error) {
+      setErrorMessage(t('invalidEmailOrPassword'));
+    } else {
+      navigate(fromPath, { replace: true });
+    }
+  };
+
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!fullName.trim()) {
+      setErrorMessage('Full name is required.');
+      return;
+    }
+    if (!email.trim() || !validateEmail(email)) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Password is required.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMessage(t('passwordTooShort'));
+      return;
+    }
+    if (!confirmPassword) {
+      setErrorMessage('Please confirm your password.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage(t('passwordsDoNotMatch'));
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signUp(fullName, email, password);
+    setLoading(false);
+
+    if (error) {
+      setErrorMessage(t('emailAlreadyExists'));
+    } else {
+      setSuccessMessage(t('accountCreatedSuccess'));
+      setFullName('');
+      setPassword('');
+      setConfirmPassword('');
+      setTab('login'); // Automatically switch to Login tab per specification
+    }
+  };
+
+  const switchTab = (newTab: 'login' | 'register') => {
+    setTab(newTab);
+    setErrorMessage('');
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16 space-y-8">
-      <div className="text-center space-y-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-teal-400 flex items-center justify-center text-white mx-auto shadow-md">
-          <Compass className="w-6 h-6" />
-        </div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Sign in to CivicFlow AI</h1>
-        <p className="text-xs text-slate-600">Save and sync your civic cases and document drafts.</p>
-      </div>
-
-      <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-md space-y-6">
-        <form onSubmit={handleLoginSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+    <div className="min-h-[85vh] flex flex-col justify-center items-center px-4 py-12 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-teal-50/30">
+      <div className="w-full max-w-md space-y-6">
+        {/* Logo & Platform Header */}
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-500 flex items-center justify-center text-white mx-auto shadow-lg shadow-indigo-500/20">
+            <Compass className="w-6 h-6" />
           </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="font-extrabold text-2xl text-slate-900 tracking-tight">CivicFlow</span>
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-2 py-0.5 rounded-md border border-indigo-200 uppercase">
+              AI
+            </span>
           </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <div className="relative border-t border-slate-200 text-center py-2">
-          <span className="bg-white px-3 text-xs font-semibold text-slate-400 relative -top-3">
-            Or for Hackathon Evaluation
-          </span>
+          <p className="text-xs text-slate-500 font-medium">
+            AI-Powered Civic & Legal Empowerment Platform
+          </p>
         </div>
 
-        <button
-          onClick={handleGuestDemo}
-          className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
-        >
-          <UserCheck className="w-4 h-4 text-teal-400" />
-          <span>Continue as Guest (No Login Required)</span>
-        </button>
+        {/* Auth Container Card */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] space-y-6">
+          {/* Segmented Tab Bar */}
+          <div className="grid grid-cols-2 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60">
+            <button
+              type="button"
+              onClick={() => switchTab('login')}
+              className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                tab === 'login'
+                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {t('loginTab')}
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab('register')}
+              className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                tab === 'register'
+                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {t('createAccountTab')}
+            </button>
+          </div>
+
+          {/* Alert Message Box */}
+          {errorMessage && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-rose-700 font-medium animate-fadeIn">
+              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-700 font-medium animate-fadeIn">
+              <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {tab === 'login' ? (
+            /* --- LOGIN FORM --- */
+            <form onSubmit={handleSignInSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('emailLabel')}
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('passwordLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{t('signingIn')}</span>
+                  </>
+                ) : (
+                  <span>{t('signInBtn')}</span>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-slate-500">
+                  {t('dontHaveAccount')}{' '}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => switchTab('register')}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  {t('createAccountBtn')}
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* --- CREATE ACCOUNT FORM --- */
+            <form onSubmit={handleSignUpSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('fullNameLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  placeholder="Citizen Name"
+                  autoComplete="name"
+                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('emailLabel')}
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('passwordLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Min. 8 characters"
+                    autoComplete="new-password"
+                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  {t('confirmPasswordLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                    className="w-full bg-slate-50 border border-slate-300/80 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? t('hidePassword') : t('showConfirmPassword')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{t('creatingAccount')}</span>
+                  </>
+                ) : (
+                  <span>{t('createAccountBtn')}</span>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-slate-500">
+                  {t('alreadyHaveAccount')}{' '}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => switchTab('login')}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  {t('signInBtn')}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Local Hackathon Auth Note */}
+        <div className="text-center space-y-1">
+          <p className="text-[11px] text-slate-500 font-medium flex items-center justify-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+            <span>CivicFlow AI Hackathon Local Prototype • Privacy Preserved</span>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -138,5 +138,32 @@ export const ta = {
   badgeCasteCert: 'சான்றிதழ் / ஆவணம்',
   badgeConsumer: 'நுகர்வோர் பிரச்சனை',
   badgeGeneral: 'பொது குடிமைப் பிரச்சனை',
+  // Authentication Keys
+  signInTitle: 'CivicFlow AI இல் உள்நுழையவும்',
+  createAccountTitle: 'CivicFlow கணக்கை உருவாக்கவும்',
+  fullNameLabel: 'முழு பெயர்',
+  emailLabel: 'மின்னஞ்சல் முகவரி',
+  passwordLabel: 'கடவுச்சொல்',
+  confirmPasswordLabel: 'கடவுச்சொல்லை உறுதிப்படுத்தவும்',
+  signInBtn: 'உள்நுழை',
+  createAccountBtn: 'கணக்கை உருவாக்கு',
+  signingIn: 'உள்நுழைகிறது...',
+  creatingAccount: 'கணக்கு உருவாக்கப்படுகிறது...',
+  dontHaveAccount: 'கணக்கு இல்லையா?',
+  alreadyHaveAccount: 'ஏற்கனவே கணக்கு உள்ளதா?',
+  passwordsDoNotMatch: 'கடவுச்சொற்கள் பொருந்தவில்லை.',
+  passwordTooShort: 'கடவுச்சொல் குறைந்தபட்சம் 8 எழுத்துகளைக் கொண்டிருக்க வேண்டும்.',
+  invalidEmailOrPassword: 'தவறான மின்னஞ்சல் அல்லது கடவுச்சொல்.',
+  accountCreatedVerify: 'கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது. உள்நுழைவதற்கு முன் உங்கள் மின்னஞ்சலைச் சரிபார்க்கவும்.',
+  accountCreatedSuccess: 'கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது. இப்போது நீங்கள் உள்நுழையலாம்.',
+  emailAlreadyExists: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது.',
+  backToSignIn: 'மீண்டும் உள்நுழைவுக்குச் செல்',
+
+  signOut: 'வெளியேறு',
+  loginTab: 'உள்நுழைவு',
+  createAccountTab: 'புதிய கணக்கு',
+  showPassword: 'கடவுச்சொல்லைக் காட்டு',
+  hidePassword: 'கடவுச்சொல்லை மறை',
 };
+
 

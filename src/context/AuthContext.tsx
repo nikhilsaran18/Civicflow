@@ -1,43 +1,70 @@
+// Prototype-only local authentication. Replace with server-side authentication for production.
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
-import { authService, DEMO_USER } from '../services/authService';
+import { localAuthService, LocalSession } from '../services/localAuthService';
+
+export interface AuthUser {
+  id: string;
+  fullName: string;
+  email: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, pass: string) => void;
-  loginWithDemo: () => void;
-  register: (name: string, email: string, lang?: 'en' | 'ta' | 'hi') => void;
-  logout: () => void;
+  user: AuthUser | null;
+  loading: boolean;
+  signIn: (email: string, pass: string) => Promise<{ error: string | null }>;
+  signUp: (fullName: string, email: string, pass: string) => Promise<{ error: string | null }>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const login = (email: string, pass: string) => {
-    const loggedIn = authService.login(email, pass);
-    setUser(loggedIn);
+  useEffect(() => {
+    // Restore session from localStorage on startup
+    const stored = localAuthService.getStoredSession();
+    if (stored) {
+      setUser({
+        id: stored.userId,
+        fullName: stored.fullName,
+        email: stored.email,
+      });
+    }
+    setLoading(false);
+  }, []);
+
+  const signIn = async (email: string, pass: string): Promise<{ error: string | null }> => {
+    const res = await localAuthService.signIn(email, pass);
+    if (res.error) {
+      return { error: res.error };
+    }
+    if (res.session) {
+      setUser({
+        id: res.session.userId,
+        fullName: res.session.fullName,
+        email: res.session.email,
+      });
+    }
+    return { error: null };
   };
 
-  const loginWithDemo = () => {
-    const demo = authService.loginWithDemo();
-    setUser(demo);
+  const signUp = async (fullName: string, email: string, pass: string): Promise<{ error: string | null }> => {
+    const res = await localAuthService.signUp(fullName, email, pass);
+    if (res.error) {
+      return { error: res.error };
+    }
+    return { error: null };
   };
 
-  const register = (name: string, email: string, lang: 'en' | 'ta' | 'hi' = 'en') => {
-    const newUser = authService.register(name, email, lang);
-    setUser(newUser);
-  };
-
-  const logout = () => {
-    authService.logout();
+  const signOut = (): void => {
+    localAuthService.signOut();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, loginWithDemo, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -138,5 +138,32 @@ export const hi = {
   badgeCasteCert: 'दस्तावेज़ / प्रमाण पत्र',
   badgeConsumer: 'उपभोक्ता विवाद',
   badgeGeneral: 'नागरिक मामला',
+  // Authentication Keys
+  signInTitle: 'CivicFlow AI में साइन इन करें',
+  createAccountTitle: 'अपना CivicFlow खाता बनाएं',
+  fullNameLabel: 'पूरा नाम',
+  emailLabel: 'ईमेल पता',
+  passwordLabel: 'पासवर्ड',
+  confirmPasswordLabel: 'पासवर्ड की पुष्टि करें',
+  signInBtn: 'साइन इन करें',
+  createAccountBtn: 'खाता बनाएं',
+  signingIn: 'साइन इन हो रहा है...',
+  creatingAccount: 'खाता बन रहा है...',
+  dontHaveAccount: 'क्या आपके पास खाता नहीं है?',
+  alreadyHaveAccount: 'क्या आपके पास पहले से खाता है?',
+  passwordsDoNotMatch: 'पासवर्ड मेल नहीं खाते।',
+  passwordTooShort: 'पासवर्ड में कम से कम 8 अक्षर होने चाहिए।',
+  invalidEmailOrPassword: 'अमान्य ईमेल या पासवर्ड।',
+  accountCreatedVerify: 'खाता सफलतापूर्वक बन गया। कृपया साइन इन करने से पहले अपना ईमेल सत्यापित करें।',
+  accountCreatedSuccess: 'खाता सफलतापूर्वक बन गया। अब आप साइन इन कर सकते हैं।',
+  emailAlreadyExists: 'इस ईमेल से पहले से एक खाता मौजूद है।',
+  backToSignIn: 'वापस साइन इन पर जाएं',
+
+  signOut: 'लॉग आउट',
+  loginTab: 'लॉग इन',
+  createAccountTab: 'खाता बनाएं',
+  showPassword: 'पासवर्ड दिखाएं',
+  hidePassword: 'पासवर्ड छुपाएं',
 };
+
 

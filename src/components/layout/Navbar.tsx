@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, Compass, Globe, Menu, X, FileText, FolderCheck, Settings as SettingsIcon, LogIn, PlusCircle } from 'lucide-react';
+import { Compass, Globe, Menu, X, Settings as SettingsIcon, PlusCircle, LogOut, User as UserIcon } from 'lucide-react';
 import { useLanguage, SupportedLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 
 export const Navbar: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,23 +15,37 @@ export const Navbar: React.FC = () => {
     setLanguage(e.target.value as SupportedLanguage);
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
+
+  const isRouteActive = (path: string) => {
+    if (isAuthRoute) return false;
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
+  const displayName = user?.fullName || user?.email?.split('@')[0] || 'Citizen';
+
+  const handleLogout = () => {
+    signOut();
+    navigate('/login');
+  };
+
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white/94 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 via-blue-600 to-teal-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               <Compass className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-800">
+                <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-800">
                   CivicFlow
                 </span>
-                <span className="bg-indigo-100 text-indigo-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-indigo-200/60 uppercase tracking-wider">
+                <span className="bg-indigo-100/90 text-indigo-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-indigo-200 uppercase tracking-wider">
                   AI
                 </span>
               </div>
@@ -46,8 +60,8 @@ export const Navbar: React.FC = () => {
             <Link
               to="/"
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                isRouteActive('/')
+                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -57,9 +71,9 @@ export const Navbar: React.FC = () => {
             <Link
               to="/case/new"
               className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors ${
-                isActive('/case/new') || isActive('/cases/new')
+                isRouteActive('/case/new') || isRouteActive('/cases/new')
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
@@ -69,8 +83,8 @@ export const Navbar: React.FC = () => {
             <Link
               to="/cases"
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/cases')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                isRouteActive('/cases') && !location.pathname.includes('/case/new')
+                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -80,8 +94,8 @@ export const Navbar: React.FC = () => {
             <Link
               to="/forms"
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/forms')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                isRouteActive('/forms')
+                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -91,8 +105,8 @@ export const Navbar: React.FC = () => {
             <Link
               to="/rti"
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/rti')
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                isRouteActive('/rti')
+                  ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -103,7 +117,7 @@ export const Navbar: React.FC = () => {
           {/* Right Controls: Language Selector & Auth */}
           <div className="hidden md:flex items-center gap-3">
             {/* Language Selector Dropdown */}
-            <div className="relative flex items-center bg-slate-100 rounded-lg px-2 py-1 border border-slate-200">
+            <div className="relative flex items-center bg-slate-100/90 rounded-lg px-2 py-1 border border-slate-200">
               <Globe className="w-4 h-4 text-slate-500 mr-1.5" />
               <select
                 value={language}
@@ -126,20 +140,26 @@ export const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-                  {user.name}
-                </span>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-800 text-xs font-bold rounded-xl border border-indigo-200/80">
+                  <UserIcon className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="truncate max-w-[120px]">{displayName}</span>
+                </div>
                 <button
-                  onClick={() => logout()}
-                  className="text-xs font-medium text-slate-500 hover:text-rose-600 px-2 py-1"
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200/80 transition-colors flex items-center gap-1"
                 >
-                  Logout
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{t('signOut')}</span>
                 </button>
               </div>
             ) : (
               <Link
                 to="/login"
-                className="text-xs font-semibold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-200 transition-colors"
+                className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                  isAuthRoute
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80'
+                }`}
               >
                 {t('navLogin')}
               </Link>
@@ -213,6 +233,26 @@ export const Navbar: React.FC = () => {
           >
             {t('navSettings')}
           </Link>
+
+          {user ? (
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700">{displayName}</span>
+              <button
+                onClick={handleLogout}
+                className="text-xs font-semibold text-rose-600 px-3 py-1.5 bg-rose-50 rounded-lg"
+              >
+                {t('signOut')}
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className="block w-full text-center px-3 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-sm"
+            >
+              {t('navLogin')}
+            </Link>
+          )}
         </div>
       )}
     </header>

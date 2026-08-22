@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Send, CheckCircle, HelpCircle, Shield, ArrowRight, RefreshCw, Upload, FileCheck, FileX } from 'lucide-react';
+import { Sparkles, Send, CheckCircle, HelpCircle, Shield, ArrowRight, RefreshCw, Upload, FileCheck, FileX, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { defaultCivicIntelligenceEngine } from '../services/ai/civicIntelligenceEngine';
-import { CaseUnderstanding, ClarificationQuestion, CivicCase, EvidenceItem, QuestionAnswerPair, ConfirmedFact } from '../types/civicIntelligence';
+import { CaseUnderstanding, ClarificationQuestion, ClarificationOption, CivicCase, EvidenceItem, QuestionAnswerPair, ConfirmedFact } from '../types/civicIntelligence';
 import { CaseStorageService } from '../services/caseStorageService';
 
 export const NewCase: React.FC = () => {
@@ -24,12 +24,16 @@ export const NewCase: React.FC = () => {
   const [stage, setStage] = useState<'input' | 'questions' | 'evidence' | 'analyzing' | 'done'>('input');
   const [understanding, setUnderstanding] = useState<CaseUnderstanding | null>(null);
 
-  // Sequential 3 Questions State
+  // Unlimited Dynamic Questions State
   const [questionNumber, setQuestionNumber] = useState<number>(1);
   const [currentQuestion, setCurrentQuestion] = useState<ClarificationQuestion | null>(null);
   const [qAndAHistory, setQAndAHistory] = useState<QuestionAnswerPair[]>([]);
-  const [currentAnswerInput, setCurrentAnswerInput] = useState<string | string[]>('');
+  const [currentAnswerInput, setCurrentAnswerInput] = useState<string>('');
+  const [selectedOptionId, setSelectedOptionId] = useState<string>('');
   const [userAnswersRecord, setUserAnswersRecord] = useState<Record<string, string | string[]>>({});
+
+  // Progress Quality Status
+  const [progressStatus, setProgressStatus] = useState<string>('Understanding Situation');
 
   // Evidence Stage State
   const [recommendedEvidence, setRecommendedEvidence] = useState<EvidenceItem[]>([]);
@@ -51,7 +55,8 @@ export const NewCase: React.FC = () => {
     if (!text.trim()) return;
     setLoading(true);
     setHasStarted(true);
-    setThinkingState('Analyzing situation & extracting confirmed facts...');
+    setThinkingState('Performing Relationship-First Classification...');
+    setProgressStatus('Understanding Situation');
 
     try {
       // 1. Initial AI Understanding
@@ -59,12 +64,14 @@ export const NewCase: React.FC = () => {
       setUnderstanding(initialUnderstanding);
 
       // 2. Fetch Question #1
-      setThinkingState('Generating dynamic Question #1 of 3...');
+      setThinkingState('Generating dynamic Clarification Question #1...');
+      setProgressStatus('Gathering Key Facts');
       const q1 = await defaultCivicIntelligenceEngine.generateNextQuestion(
         text,
         initialUnderstanding.confirmedFacts,
         [],
-        1
+        1,
+        initialUnderstanding.relationship
       );
 
       setStage('questions');
@@ -78,47 +85,61 @@ export const NewCase: React.FC = () => {
     }
   };
 
-  const formatDeclarativeFact = (q: ClarificationQuestion, answerVal: string | string[]): string => {
-    const answerStr = Array.isArray(answerVal) ? answerVal.join(', ') : answerVal;
+  const formatDeclarativeFact = (q: ClarificationQuestion, answerVal: string, optionLabel?: string): string => {
+    const displayAns = optionLabel || answerVal;
     const qText = q.question.toLowerCase();
 
+    if (qText.includes('how was the money') || qText.includes('method')) {
+      return `Transaction method: ${displayAns}.`;
+    }
+    if (qText.includes('authorize') || qText.includes('authorization')) {
+      return `Transaction authorization: ${displayAns}.`;
+    }
     if (qText.includes('type of pension') || qText.includes('pension type')) {
-      return `The pensioner receives a ${answerStr}.`;
+      return `Pension classification: ${displayAns}.`;
     }
     if (qText.includes('life certificate')) {
-      return `Life Certificate status: ${answerStr}.`;
+      return `Life Certificate status: ${displayAns}.`;
     }
     if (qText.includes('tenancy') || qText.includes('rental agreement')) {
-      return `Rental agreement status: ${answerStr}.`;
+      return `Rental agreement status: ${displayAns}.`;
     }
-    if (qText.includes('notice') && (qText.includes('move out') || qText.includes('moving out'))) {
-      return `Tenancy move-out notice status: ${answerStr}.`;
-    }
-    if (qText.includes('application acknowledgement') || qText.includes('reference number')) {
-      return `Application reference status: ${answerStr}.`;
-    }
-    if (qText.includes('reason for withholding') || qText.includes('reason given')) {
-      return `Stated reason given: ${answerStr}.`;
-    }
-    if (qText.includes('primary outcome') || qText.includes('outcome do you wish')) {
-      return `Primary requested outcome: ${answerStr}.`;
+    if (qText.includes('who took') || qText.includes('received')) {
+      return `Counterparty involved: ${displayAns}.`;
     }
 
-    return `Citizen confirmed: ${answerStr}.`;
+    return `Citizen confirmed: ${displayAns}.`;
   };
 
-
+  const handleOptionSelect = (opt: string | ClarificationOption) => {
+    if (typeof opt === 'string') {
+      setCurrentAnswerInput(opt);
+      setSelectedOptionId(opt);
+    } else {
+      setCurrentAnswerInput(opt.value || opt.label);
+      setSelectedOptionId(opt.id || opt.value);
+    }
+  };
 
   const handleAnswerSubmit = async () => {
     if (!currentQuestion || !understanding) return;
 
     const answerVal = currentAnswerInput;
+    let selectedLabel = answerVal;
+    if (currentQuestion.options) {
+      const match = currentQuestion.options.find(o => typeof o !== 'string' && (o.value === answerVal || o.id === selectedOptionId));
+      if (match && typeof match !== 'string') {
+        selectedLabel = match.label;
+      }
+    }
 
     // Record Q&A pair
     const qaPair: QuestionAnswerPair = {
       questionNumber,
       question: currentQuestion,
       answer: answerVal,
+      selectedOptionId,
+      selectedOptionLabel: selectedLabel,
     };
     const updatedQA = [...qAndAHistory, qaPair];
     setQAndAHistory(updatedQA);
@@ -126,52 +147,38 @@ export const NewCase: React.FC = () => {
     // Update confirmed facts with declarative factual statement
     const newFact: ConfirmedFact = {
       id: `ans_${questionNumber}`,
-      fact: formatDeclarativeFact(currentQuestion, answerVal),
+      fact: formatDeclarativeFact(currentQuestion, answerVal, selectedLabel),
       source: 'clarification_answer',
     };
     const updatedFacts = [...understanding.confirmedFacts, newFact];
     
-    // Dynamic confidence calculation: LOW -> MEDIUM (Q1/Q2) -> HIGH (Q3)
-    const nextConfidence = updatedQA.length >= 3 ? 'high' : 'medium';
-
     const updatedUnderstanding = {
       ...understanding,
       confirmedFacts: updatedFacts,
-      confidence: nextConfidence,
+      confidence: updatedQA.length >= 3 ? ('high' as const) : ('medium' as const),
     };
     setUnderstanding(updatedUnderstanding);
 
     const updatedAnswers = { ...userAnswersRecord, [currentQuestion.id]: answerVal };
     setUserAnswersRecord(updatedAnswers);
     setCurrentAnswerInput('');
+    setSelectedOptionId('');
 
-    // If Question 1 or 2 -> Generate next sequential question
-    if (questionNumber < 3) {
-      const nextQNum = questionNumber + 1;
-      setLoading(true);
-      setThinkingState(`Re-evaluating case facts & generating Question #${nextQNum} of 3...`);
+    // Evaluate evidence sufficiency
+    setLoading(true);
+    setThinkingState('Performing Evidence Sufficiency Check...');
 
-      try {
-        const nextQ = await defaultCivicIntelligenceEngine.generateNextQuestion(
-          problemText,
-          updatedFacts,
-          updatedQA,
-          nextQNum
-        );
-        setQuestionNumber(nextQNum);
-        setCurrentQuestion(nextQ);
-      } catch (err) {
-        console.error('Error fetching next question:', err);
-      } finally {
-        setLoading(false);
-        setThinkingState('');
-      }
-    } else {
-      // Question 3 Answered -> Move to Evidence Stage!
-      setLoading(true);
-      setThinkingState('Evaluating case facts & determining recommended evidence...');
+    try {
+      const sufficiency = await defaultCivicIntelligenceEngine.evaluateSufficiency(
+        problemText,
+        updatedUnderstanding,
+        updatedQA
+      );
 
-      try {
+      // Stop questions if sufficient OR reached 5 rounds (prevent infinite loop)
+      if (sufficiency.sufficient || questionNumber >= 5) {
+        setProgressStatus('Ready for Analysis');
+        setThinkingState('Facts verified. Determining case-specific evidence...');
         const evidenceItems = await defaultCivicIntelligenceEngine.recommendEvidence(
           problemText,
           updatedFacts,
@@ -179,13 +186,28 @@ export const NewCase: React.FC = () => {
         );
         setRecommendedEvidence(evidenceItems);
         setStage('evidence');
-      } catch (err) {
-        console.error('Error recommending evidence:', err);
-        setStage('evidence');
-      } finally {
-        setLoading(false);
-        setThinkingState('');
+      } else {
+        const nextQNum = questionNumber + 1;
+        setProgressStatus(nextQNum <= 2 ? 'Gathering Key Facts' : 'Checking Evidence');
+        setThinkingState(`Gathering further details (Clarification Question #${nextQNum})...`);
+
+        const nextQ = await defaultCivicIntelligenceEngine.generateNextQuestion(
+          problemText,
+          updatedFacts,
+          updatedQA,
+          nextQNum,
+          updatedUnderstanding.relationship
+        );
+
+        setQuestionNumber(nextQNum);
+        setCurrentQuestion(nextQ);
       }
+    } catch (err) {
+      console.error('Error evaluating sufficiency / fetching question:', err);
+      setStage('evidence');
+    } finally {
+      setLoading(false);
+      setThinkingState('');
     }
   };
 
@@ -211,7 +233,7 @@ export const NewCase: React.FC = () => {
     if (!understanding) return;
     setStage('analyzing');
     setLoading(true);
-    setThinkingState('Building complete case analysis & dynamic action plan...');
+    setThinkingState('Building case solution and action plan...');
 
     try {
       const evidenceFacts: ConfirmedFact[] = uploadedFiles.map(f => ({
@@ -227,7 +249,7 @@ export const NewCase: React.FC = () => {
         evidenceFacts
       );
 
-      const categoryBadge = fullSolution.categoryBadge || understanding.categoryBadge || defaultCivicIntelligenceEngine.deriveCategoryBadge(problemText);
+      const categoryBadge = fullSolution.categoryBadge || understanding.categoryBadge || defaultCivicIntelligenceEngine.deriveCategoryBadge(problemText, understanding.relationship);
 
       const finalCase: CivicCase = {
         id: currentCaseId,
@@ -243,6 +265,11 @@ export const NewCase: React.FC = () => {
         understanding: {
           ...understanding,
           categoryBadge,
+          relationship: fullSolution.relationship || understanding.relationship,
+          issueCategory: fullSolution.issueCategory || understanding.issueCategory,
+          rtiApplicable: fullSolution.rtiApplicable !== undefined ? fullSolution.rtiApplicable : understanding.rtiApplicable,
+          potentialRoutes: fullSolution.potentialRoutes,
+          inappropriateRoutes: fullSolution.inappropriateRoutes,
           confidence: fullSolution.confidence || 'high',
         },
         qAndA: qAndAHistory,
@@ -276,23 +303,27 @@ export const NewCase: React.FC = () => {
     }
   };
 
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-            CivicFlow Case Engine (ID: {currentCaseId.slice(0, 12)})
+            CivicFlow AI Engine (ID: {currentCaseId.slice(0, 12)})
           </span>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Tell us what happened
           </h1>
         </div>
         {understanding && (
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
-            <Sparkles className="w-4 h-4 text-teal-600" />
-            <span>Universal AI Case Engine Active</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+              Progress: <span className="text-indigo-700 font-extrabold">{progressStatus}</span>
+            </span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
+              <Sparkles className="w-4 h-4 text-teal-600" />
+              <span>Relationship-First Reasoning Engine Active</span>
+            </div>
           </div>
         )}
       </div>
@@ -303,7 +334,7 @@ export const NewCase: React.FC = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-900">Describe your civic or legal issue</h2>
             <p className="text-sm text-slate-600">
-              Tell us what happened in plain language. CivicFlow AI will understand your problem and ask 3 dynamic clarification questions.
+              Describe your situation in plain language. CivicFlow AI will perform relationship-first classification and ask dynamic clarification questions with predefined selectable options.
             </p>
           </div>
 
@@ -327,9 +358,9 @@ export const NewCase: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* WORKSPACE INTERACTIVE GRID: LEFT WORKSPACE + RIGHT CASE UNDERSTANDING */
+        /* WORKSPACE INTERACTIVE GRID */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT 2 COLUMNS: Sequential Questions / Evidence Stage / Thinking state */}
+          {/* LEFT 2 COLUMNS */}
           <div className="lg:col-span-2 space-y-6">
             {/* Citizen Original Statement */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
@@ -350,16 +381,16 @@ export const NewCase: React.FC = () => {
             {qAndAHistory.length > 0 && (
               <div className="space-y-3">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Clarification Record ({qAndAHistory.length} of 3 Completed)
+                  Clarification Record ({qAndAHistory.length} Answered)
                 </span>
                 <div className="space-y-3">
                   {qAndAHistory.map(item => (
                     <div key={item.questionNumber} className="bg-white p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 shadow-xs">
                       <div className="font-bold text-indigo-700">
-                        Q{item.questionNumber}: {item.question.question}
+                        Clarification Q{item.questionNumber}: {item.question.question}
                       </div>
                       <div className="text-slate-800 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 font-medium">
-                        Answer: <span className="font-bold">{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
+                        Selected Choice: <span className="font-bold">{item.selectedOptionLabel || (Array.isArray(item.answer) ? item.answer.join(', ') : item.answer)}</span>
                       </div>
                     </div>
                   ))}
@@ -375,7 +406,7 @@ export const NewCase: React.FC = () => {
               </div>
             )}
 
-            {/* STAGE 2, 3, 4: SEQUENTIAL CLARIFICATION QUESTION CARD */}
+            {/* UNLIMITED DYNAMIC CLARIFICATION QUESTION CARD */}
             {stage === 'questions' && currentQuestion && (
               <div className="bg-white p-6 sm:p-8 rounded-3xl border border-indigo-100 shadow-lg space-y-5 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-600 via-teal-500 to-indigo-600" />
@@ -383,7 +414,7 @@ export const NewCase: React.FC = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-extrabold border border-indigo-200">
-                      <span>Clarification Question #{questionNumber} of 3</span>
+                      <span>Clarification Question #{questionNumber}</span>
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 leading-snug pt-1">
                       {currentQuestion.question}
@@ -396,46 +427,41 @@ export const NewCase: React.FC = () => {
                   💡 <span className="font-bold">Why this matters:</span> {currentQuestion.reason}
                 </p>
 
-                {/* Input Render based on Question Type */}
+                {/* Predefined Selectable Options */}
                 <div className="space-y-3 pt-2">
-                  {currentQuestion.type === 'single_select' && currentQuestion.options ? (
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Select One Option:
+                  </span>
+                  {currentQuestion.options && currentQuestion.options.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {currentQuestion.options.map((opt, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentAnswerInput(opt)}
-                          className={`p-3.5 rounded-2xl text-xs font-semibold text-left transition-all border ${
-                            currentAnswerInput === opt
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50 hover:border-indigo-200'
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  ) : currentQuestion.type === 'yes_no' ? (
-                    <div className="flex gap-4">
-                      {['Yes', 'No'].map(val => (
-                        <button
-                          key={val}
-                          onClick={() => setCurrentAnswerInput(val)}
-                          className={`flex-1 py-3.5 rounded-2xl text-xs font-bold transition-all border ${
-                            currentAnswerInput === val
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50'
-                          }`}
-                        >
-                          {val}
-                        </button>
-                      ))}
+                      {currentQuestion.options.map((opt, idx) => {
+                        const optVal = typeof opt === 'string' ? opt : (opt.value || opt.label);
+                        const optLabel = typeof opt === 'string' ? opt : opt.label;
+                        const isSelected = currentAnswerInput === optVal || (typeof opt !== 'string' && selectedOptionId === opt.id);
+
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleOptionSelect(opt)}
+                            className={`p-4 rounded-2xl text-xs font-bold text-left transition-all border flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
+                                : 'bg-slate-50 text-slate-800 border-slate-200/90 hover:bg-indigo-50 hover:border-indigo-200'
+                            }`}
+                          >
+                            <span>{optLabel}</span>
+                            {isSelected && <CheckCircle className="w-4 h-4 text-white flex-shrink-0 ml-2" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : (
                     <textarea
-                      value={typeof currentAnswerInput === 'string' ? currentAnswerInput : ''}
+                      value={currentAnswerInput}
                       onChange={e => setCurrentAnswerInput(e.target.value)}
                       rows={3}
-                      placeholder="Type your answer here..."
+                      placeholder="Type your clarification answer here..."
                       className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   )}
@@ -443,7 +469,7 @@ export const NewCase: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                   <span className="text-xs text-slate-400 font-medium">
-                    Question Validator Pass Checked ✓
+                    Evidence Sufficiency Evaluator Active ✓
                   </span>
 
                   <button
@@ -451,14 +477,14 @@ export const NewCase: React.FC = () => {
                     disabled={!currentAnswerInput || loading}
                     className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    <span>Submit Answer & Continue</span>
+                    <span>Submit & Continue</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STAGE 5: DYNAMIC EVIDENCE RECOMMENDATION STAGE */}
+            {/* DYNAMIC EVIDENCE RECOMMENDATION STAGE */}
             {stage === 'evidence' && (
               <div className="bg-white p-6 sm:p-8 rounded-3xl border border-teal-200 shadow-lg space-y-6">
                 <div className="space-y-2 border-b border-slate-100 pb-4">
@@ -470,7 +496,7 @@ export const NewCase: React.FC = () => {
                     Recommended evidence for this case
                   </h2>
                   <p className="text-xs text-slate-600">
-                    Gemini has evaluated your problem and clarification answers. Uploading any relevant items will strengthen your case file, or you may proceed directly.
+                    CivicFlow AI has evaluated your situation and verified facts. Upload any relevant evidence to strengthen your case file, or proceed directly.
                   </p>
                 </div>
 
@@ -505,7 +531,7 @@ export const NewCase: React.FC = () => {
                       type="text"
                       value={fileNotesInput}
                       onChange={e => setFileNotesInput(e.target.value)}
-                      placeholder="e.g. Tenancy agreement copy / Fee receipt number"
+                      placeholder="e.g. UPI receipt screenshot / Tenancy agreement copy"
                       className="flex-1 bg-white border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
 
@@ -580,6 +606,42 @@ export const NewCase: React.FC = () => {
 
               {understanding && (
                 <>
+                  {/* Category & Relationship Badge */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Classification & Relationship
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-extrabold border border-indigo-200 uppercase">
+                        {understanding.categoryBadge || 'CIVIC MATTER'}
+                      </span>
+                      {understanding.relationship && (
+                        <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 uppercase">
+                          {understanding.relationship.replace('_', ' ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RTI Safety Warning Banner */}
+                  <div className={`p-2.5 rounded-2xl border text-xs font-semibold flex items-center gap-2 ${
+                    understanding.rtiApplicable
+                      ? 'bg-teal-50 text-teal-800 border-teal-200'
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                  }`}>
+                    {understanding.rtiApplicable ? (
+                      <>
+                        <Sparkles className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span>RTI Applicable (Public Authority Matter)</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span>RTI Excluded (Private / Financial Matter)</span>
+                      </>
+                    )}
+                  </div>
+
                   {/* AI Generated Descriptive Case Title */}
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">

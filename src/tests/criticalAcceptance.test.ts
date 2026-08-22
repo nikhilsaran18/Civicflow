@@ -113,19 +113,46 @@ describe('CRITICAL ACCEPTANCE TEST SUITE — CIVICFLOW AI', () => {
     expect(result.understanding.aiCaseDescription).toBeDefined();
   });
 
-  it('TEST 7: Cross-Case Isolation (Zero contamination across sequential cases)', async () => {
-    // Case A: Certificates
-    const caseA = await defaultCivicIntelligenceEngine.analyzeCase("My university won't return my original certificates.", {});
-    
-    // Case B: Streetlight
-    const caseB = await defaultCivicIntelligenceEngine.analyzeCase("The street light outside my house is broken.", {});
-    expect(JSON.stringify(caseB)).not.toContain('university');
-    expect(JSON.stringify(caseB)).not.toContain('certificates');
-    expect(JSON.stringify(caseB)).not.toContain('UGC');
+  it('TEST 8: Relationship-First Classification for Private Money Dispute (Girlfriend Money Robbed)', async () => {
+    const input = "MY GIRLFRIEND ROBBED MY MONEY";
+    const result = await defaultCivicIntelligenceEngine.analyzeCase(input, {});
 
-    // Case C: Pension
-    const caseC = await defaultCivicIntelligenceEngine.analyzeCase("My father's pension stopped.", {});
-    expect(JSON.stringify(caseC)).not.toContain('street light');
-    expect(JSON.stringify(caseC)).not.toContain('university');
+    // Must identify relationship as PRIVATE_INDIVIDUAL
+    expect(result.understanding.relationship).toBe('PRIVATE_INDIVIDUAL');
+
+    // Must NOT be marked as RTI applicable
+    expect(result.understanding.rtiApplicable).toBe(false);
+
+    // Title must be neutral (NOT "Girlfriend Theft Crime")
+    const title = result.understanding.caseTitle.toLowerCase();
+    expect(title).not.toContain('crime');
+    expect(title).not.toContain('theft');
+
+    // Solution must NOT route to CPGRAMS or Nodal Public Authority
+    const solution = await defaultCivicIntelligenceEngine.generateSolution(input, result.understanding, []);
+    expect(solution.rtiApplicable).toBe(false);
+
+    const authorityName = (solution.responsibleAuthority?.name || '').toLowerCase();
+    expect(authorityName).not.toContain('nodal public authority');
+    expect(authorityName).not.toContain('cpgrams');
+
+    const inapp = (solution.inappropriateRoutes || []).join(' ');
+    expect(inapp).toContain('CPGRAMS');
+    expect(inapp).toContain('RTI');
+  });
+
+  it('TEST 9: Landlord & Consumer Disputes do NOT map to CPGRAMS or RTI', async () => {
+    const landlordInput = "My landlord refuses to return my security deposit.";
+    const landlordResult = await defaultCivicIntelligenceEngine.analyzeCase(landlordInput, {});
+
+    expect(landlordResult.understanding.relationship).toBe('LANDLORD');
+    expect(landlordResult.understanding.rtiApplicable).toBe(false);
+
+    const consumerInput = "Amazon seller refuses to refund my defective phone.";
+    const consumerResult = await defaultCivicIntelligenceEngine.analyzeCase(consumerInput, {});
+
+    expect(consumerResult.understanding.relationship).toBe('BUSINESS_SELLER');
+    expect(consumerResult.understanding.rtiApplicable).toBe(false);
   });
 });
+

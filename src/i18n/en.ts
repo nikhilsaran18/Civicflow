@@ -138,5 +138,32 @@ export const en = {
   badgeCasteCert: 'DOCUMENTATION / CERTIFICATE',
   badgeConsumer: 'CONSUMER DISPUTE',
   badgeGeneral: 'CIVIC MATTER',
+  // Authentication Keys
+  signInTitle: 'Sign in to CivicFlow AI',
+  createAccountTitle: 'Create your CivicFlow Account',
+  fullNameLabel: 'Full Name',
+  emailLabel: 'Email Address',
+  passwordLabel: 'Password',
+  confirmPasswordLabel: 'Confirm Password',
+  signInBtn: 'Sign In',
+  createAccountBtn: 'Create Account',
+  signingIn: 'Signing In...',
+  creatingAccount: 'Creating Account...',
+  dontHaveAccount: "Don't have an account?",
+  alreadyHaveAccount: 'Already have an account?',
+  passwordsDoNotMatch: 'Passwords do not match.',
+  passwordTooShort: 'Password must contain at least 8 characters.',
+  invalidEmailOrPassword: 'Invalid email or password.',
+  accountCreatedVerify: 'Account created successfully. Please check your email and verify your account before signing in.',
+  accountCreatedSuccess: 'Account created successfully. You can now sign in.',
+  emailAlreadyExists: 'An account with this email already exists.',
+  backToSignIn: 'Back to Sign In',
+
+  signOut: 'Logout',
+  loginTab: 'Login',
+  createAccountTab: 'Create Account',
+  showPassword: 'Show password',
+  hidePassword: 'Hide password',
 };
+
 

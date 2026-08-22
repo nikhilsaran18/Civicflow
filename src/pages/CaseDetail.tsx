@@ -446,15 +446,27 @@ export const CaseDetail: React.FC = () => {
             </button>
           )}
 
-          <button
-            onClick={() => handleOpenActionStudio('rti')}
-            className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-sm rounded-xl border border-teal-500/40 shadow-md transition-all flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4 text-teal-400" />
-            <span>{t('generateRTIFromCase')}</span>
-          </button>
+          {Boolean(
+            caseData.understanding?.rtiApplicable ??
+            caseData.solution?.rtiApplicable ??
+            (caseData.understanding?.relationship === 'GOVERNMENT_PUBLIC_AUTHORITY' || caseData.understanding?.relationship === 'POLICE_LAW_ENFORCEMENT')
+          ) ? (
+            <button
+              onClick={() => handleOpenActionStudio('rti')}
+              className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-sm rounded-xl border border-teal-500/40 shadow-md transition-all flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-teal-400" />
+              <span>{t('generateRTIFromCase')}</span>
+            </button>
+          ) : (
+            <div className="px-4 py-3 bg-slate-800/80 border border-slate-700 text-slate-400 text-xs font-medium rounded-xl flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>RTI Excluded (Applies to Public Authorities Only)</span>
+            </div>
+          )}
         </div>
       </section>
+
 
     </div>
   );

@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 import { Landing } from './pages/Landing';
 import { NewCase } from './pages/NewCase';
@@ -12,7 +13,6 @@ import { DocumentGenerator } from './pages/DocumentGenerator';
 import { Cases } from './pages/Cases';
 
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Settings } from './pages/Settings';
 import { Help } from './pages/Help';
 import { FormAssistant } from './pages/FormAssistant';
@@ -30,28 +30,32 @@ export function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<AppLayout />}>
-                {/* Public & Guest Routes */}
+                {/* Public Routes */}
                 <Route index element={<Landing />} />
                 <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-                <Route path="settings" element={<Settings />} />
+                <Route path="register" element={<Login defaultTab="register" />} />
                 <Route path="help" element={<Help />} />
 
-                {/* Core Dynamic Case Routes */}
-                <Route path="case/new" element={<NewCase />} />
-                <Route path="cases/new" element={<NewCase />} />
-                <Route path="case/:id" element={<CaseDetail />} />
-                <Route path="cases/:id" element={<CaseDetail />} />
-                <Route path="case/:id/document/:documentId" element={<DocumentGenerator />} />
-                <Route path="cases" element={<Cases />} />
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="settings" element={<Settings />} />
 
-                {/* Auxiliary Empowering Tools */}
-                <Route path="forms" element={<FormAssistant />} />
-                <Route path="forms/:id/fill" element={<FormFill />} />
-                <Route path="schemes" element={<SchemeChecker />} />
-                <Route path="schemes/results" element={<SchemeResults />} />
-                <Route path="rti" element={<RTIBuilder />} />
-                <Route path="rti/new" element={<RTIBuilder />} />
+                  {/* Core Case Workflows */}
+                  <Route path="case/new" element={<NewCase />} />
+                  <Route path="cases/new" element={<NewCase />} />
+                  <Route path="case/:id" element={<CaseDetail />} />
+                  <Route path="cases/:id" element={<CaseDetail />} />
+                  <Route path="case/:id/document/:documentId" element={<DocumentGenerator />} />
+                  <Route path="cases" element={<Cases />} />
+
+                  {/* Auxiliary Empowering Tools */}
+                  <Route path="forms" element={<FormAssistant />} />
+                  <Route path="forms/:id/fill" element={<FormFill />} />
+                  <Route path="schemes" element={<SchemeChecker />} />
+                  <Route path="schemes/results" element={<SchemeResults />} />
+                  <Route path="rti" element={<RTIBuilder />} />
+                  <Route path="rti/new" element={<RTIBuilder />} />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Route>
